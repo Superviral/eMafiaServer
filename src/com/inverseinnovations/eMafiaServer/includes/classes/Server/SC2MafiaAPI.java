@@ -72,17 +72,7 @@ public class SC2MafiaAPI extends Thread{
 		if((errorMsg = responseError(init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),false))) == null){
 			Base.Console.config("SC2Mafia Forum API connected.");
 			//attempt to login
-			errorMsg = responseError(login());if(errorMsg == null){errorMsg = "";}
-			if(errorMsg.equals("redirect_login")){//if login is succesful
-				//init again to get the new session after loggin in
-				//init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),true);
-				Base.Console.config("SC2Mafia Forum API logged in.");
-				setConnected(true);
-			}
-			else{
-				Base.Console.warning("SC2Mafia Forum API unable to login! Registration is disabled. Reason: '"+errorMsg+"'");
-				setConnected(false);
-			}
+			loginAttempt();
 		}
 		else{
 			Base.Console.warning("SC2Mafia Forum API unable to connect! Registration is disabled. Reason: '"+errorMsg+"'");
@@ -128,7 +118,7 @@ public class SC2MafiaAPI extends Thread{
 	 *
 	 * @return the API access token
 	 */
-	public String getAPIAccessToken() {
+	private String getAPIAccessToken() {
 		return apiAccessToken;
 	}
 	/**
@@ -138,7 +128,7 @@ public class SC2MafiaAPI extends Thread{
 	 * @param apiAccessToken
 	 *            the new API access token
 	 */
-	public void setAPIAccessToken(String apiAccessToken) {
+	private void setAPIAccessToken(String apiAccessToken) {
 		this.apiAccessToken = apiAccessToken;
 	}
 	/**
@@ -164,7 +154,7 @@ public class SC2MafiaAPI extends Thread{
 	 *
 	 * @return the secret value
 	 */
-	public String getSecret() {
+	private String getSecret() {
 		return secret;
 	}
 	/**
@@ -174,7 +164,7 @@ public class SC2MafiaAPI extends Thread{
 	 * @param secret
 	 *            the new secret value
 	 */
-	public void setSecret(String secret) {
+	private void setSecret(String secret) {
 		this.secret = secret;
 	}
 	/**
@@ -183,6 +173,9 @@ public class SC2MafiaAPI extends Thread{
 	public void setConnected(boolean arg){
 		this.CONNECTED = arg;
 	}
+	/**
+	 * Returns if connected AND logged into sc2maf forum
+	 */
 	public boolean getConnected(){
 		return CONNECTED;
 	}
@@ -253,8 +246,28 @@ public class SC2MafiaAPI extends Thread{
 		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
 		return theReturn;
 	}
+	/**
+	 * Attempts to login no more than 3 times
+	 */
+	public void loginAttempt(){
+		String errorMsg = "";
+		for(int i = 0;i < 3;i++){
+			errorMsg = responseError(login());if(errorMsg == null){errorMsg = "";}
+			if(errorMsg.equals("redirect_login")){//if login is succesful
+				Base.Console.config("SC2Mafia Forum API logged in.");
+				setConnected(true);
+				break;
+			}
+		}
+		if(!errorMsg.equals("redirect_login")){//login failed
+			Base.Console.warning("SC2Mafia Forum API unable to login! Registration is disabled. Reason: '"+errorMsg+"'");
+			setConnected(false);
+		}
+
+
+	}
 	/**Login using the Game Master credientals*/
-	public LinkedTreeMap<String, Object> login(){
+	private LinkedTreeMap<String, Object> login(){
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("vb_login_username", Base.Settings.GAMEMASTERNAME);
 		params.put("vb_login_password", Base.Settings.GAMEMASTERPASS);
@@ -277,6 +290,15 @@ public class SC2MafiaAPI extends Thread{
 		if(errorMsg != null){
 			if(errorMsg.equals("pm_messagesent")){
 				return errorMsg;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				loginAttempt();
+				if(getConnected()){
+					return sendMsg(user, title, message);
+				}
+				else{
+					return errorMsg;
+				}
 			}
 			else{
 				Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
@@ -345,7 +367,7 @@ public class SC2MafiaAPI extends Thread{
 		return theReturn;
 	}
 	/**
-	 * Inits the.
+	 * Inits the connection to SC2MafiaForum and retrieves the secret
 	 *
 	 * @param clientname
 	 *            the name of the client
@@ -363,7 +385,7 @@ public class SC2MafiaAPI extends Thread{
 	 *             If the URL is wrong, or a connection is unable to be made for
 	 *             whatever reason.
 	 */
-	public LinkedTreeMap<String, Object> init(String clientname, String clientversion,String platformname, String platformversion, String uniqueid, boolean loggedIn){// throws IOException{
+	private LinkedTreeMap<String, Object> init(String clientname, String clientversion,String platformname, String platformversion, String uniqueid, boolean loggedIn){// throws IOException{
 		try{
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("clientname", clientname);
@@ -398,7 +420,7 @@ public class SC2MafiaAPI extends Thread{
 	 *             If the URL is wrong, or a connection is unable to be made for
 	 *             whatever reason.
 	 */
-	public LinkedTreeMap<String, Object> callMethod(String methodname,Map<String, String> params, boolean sign){// throws IOException{
+	private LinkedTreeMap<String, Object> callMethod(String methodname,Map<String, String> params, boolean sign){// throws IOException{
 		LinkedTreeMap<String, Object> map = null;
 
 		try{
@@ -430,11 +452,11 @@ public class SC2MafiaAPI extends Thread{
 			//StringBuffer returnBuffer = new StringBuffer();
 			InputStream is = null;
 			try{
-				 is = conn.getInputStream();
+				is = conn.getInputStream();
 			}
 			finally{
 				if(is != null){
-			        String json = IOUtils.toString( is );
+					String json = IOUtils.toString( is );
 
 					//System.out.print(json);
 

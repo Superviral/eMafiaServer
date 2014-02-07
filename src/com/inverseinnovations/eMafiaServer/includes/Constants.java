@@ -4,7 +4,7 @@ Copyright (C) 2012  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes;
 
 public class Constants {
-	public static final String VERSION = "0.1.7.0";
+	public static final String VERSION = "0.1.7.1";
 
 	public static final String CMDVARDIVIDER = "";
 	public static final String CMDVARSUBDIVIDER = "";
