@@ -81,7 +81,12 @@ public class SocketClient extends Thread{
 						}
 						//Server.Base.Console.debug("cmdSize = "+cmdSize);
 						in.readFully(commandByte, 0, cmdSize);// gets command
-						command = new String(commandByte,"ISO-8859-1");//convert byte to String
+						if(commandByte != null){
+							command = new String(commandByte,"ISO-8859-1");//convert byte to String
+						}
+						else{
+							command = "";
+						}
 
 						dataSize = in.readUnsignedShort();	// gets 2 byte size of data(may
 														// increase size later..only
