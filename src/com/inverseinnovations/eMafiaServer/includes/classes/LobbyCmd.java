@@ -12,7 +12,9 @@ import com.inverseinnovations.eMafiaServer.includes.StringFunctions;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Lobby;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Match;
+import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Role;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.SocketClient;
+import com.inverseinnovations.sharedObjects.RoleData;
 
 /**
  * Provides list of all commands a Character may call when inside a Lobby<br>
@@ -22,7 +24,7 @@ public class LobbyCmd {
 	public static String[] CMDLIST = {
 		//basic commands
 		//"help","look","match",
-		"charaupdate","match","refresh","refreshplist","say","quit",
+		"charaupdate","match","refresh","refreshplist","rolecreate","roleedit","rolesearch","roleview","say","quit",
 		//admin commands
 		//"_show_commands","_shutdown","timer_add","_setupbots","_makenpc","_force"
 		//experimental commands
@@ -82,6 +84,73 @@ public class LobbyCmd {
 		}
 		c.send(CmdCompile.refreshPList(charas));
 		return;
+	}
+	public static void rolecreate(Character c, String phrase, byte[] data){
+		//-rolecreate) - attempt to create a new role
+		if(data != null){
+			Object objData = StringFunctions.byteToObject(data);
+			if(objData instanceof RoleData){
+				if(c.Game.Base.MySql.insertRole(((RoleData)objData), "CUSTOM")){
+					c.Game.Base.Console.info("Role Created: "+((RoleData)objData).name);
+				}
+				else{
+					c.Game.Base.Console.warning("Role Creation of "+((RoleData)objData).name+" failed!");
+				}
+			}
+		}
+	}
+	public static void roleedit(Character c, String phrase, byte[] data){
+		//-roleedit - attempt to edit a role
+		if(data != null){
+			Object objData = StringFunctions.byteToObject(data);
+			if(objData instanceof RoleData){
+				if(((RoleData)objData).id > 0){
+					Role role = c.Game.Base.MySql.grabRole(((RoleData)objData).id);
+					if(role != null){
+						if(c.Game.Base.MySql.updateRole(((RoleData)objData), role.getVersion(), "CUSTOM")){
+							c.Game.Base.Console.info("Role Edited: "+role.getName());
+						}
+						else{
+							c.Game.Base.Console.warning("Role Edit of "+role.getName()+" failed!");
+						}
+					}
+				}
+			}
+		}
+	}
+	public static void rolesearch(Character c, String phrase, byte[] data){
+		//lets user search database for roles...
+		//-rolesearch (aff) (cat) (page)
+		//(parameters):
+		//	aff (text)- display list of roles in the inputted affiation
+		//	cat (text)- display list of roles in the inputted category
+		//	page- page shows next batch of '10' roles
+		if(phrase.contains(" ")){
+			String[] ephrase = phrase.split(" ");
+			if(ephrase.length >= 3){//need atleast than 3 parameters
+				if(StringFunctions.isInteger(ephrase[2])){
+					c.send(CmdCompile.roleSearchResults(c.Game.Base.MySql.searchRoles(ephrase[0], ephrase[1], Integer.parseInt(ephrase[2]))));
+				}
+			}
+
+		}
+	}
+	public static void roleview(Character c, String phrase, byte[] data){
+		//-roleview (id) - attempt to view the role by id number
+		String[] ephrase = phrase.split(" ");
+		if(StringFunctions.isInteger(ephrase[0])){
+			Role role = c.Game.Base.MySql.grabRole(Integer.parseInt(ephrase[0]));
+			if(role != null){
+				if(ephrase.length > 1){if(StringFunctions.isInteger(ephrase[1])){
+					if(role.getVersion() > Integer.parseInt(ephrase[1])){
+						c.send(CmdCompile.roleView(role));
+					}
+				}}
+				else{
+					c.send(CmdCompile.roleView(role));
+				}
+			}
+		}
 	}
 	public static void say(Character c, String phrase, byte[] data){//need to remove..copyrighted
 		//later will add a wholoe chat channel function that this

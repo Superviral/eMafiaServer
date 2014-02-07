@@ -48,7 +48,7 @@ public class LoginHandler {
 				cObj.send(CmdCompile.closeLayer("register"));
 				cObj.send(CmdCompile.verifyPrompt());
 			}
-			else if(command.length() <= 18 && command.length() >= 4){//if they enter a name between 4-18 chars
+			else if(command.length() <= 24 && command.length() >= 2){//if they enter a name between 4-18 chars
 				int doExist = Base.MySql.checkUsername(command);
 				if(doExist==0){//if name dont exist
 					cObj.loginSubState = 2;//await password
@@ -80,10 +80,10 @@ public class LoginHandler {
 					cObj.loginSubState = 1;//return to login
 				}
 			}
-			else{//is less or more than 4-18 chars
+			else{//is less or more than 2-24 chars
 				cObj.send(CmdCompile.closeLayer("register"));
 				cObj.send(CmdCompile.loginPrompt());
-				cObj.send(CmdCompile.genericPopup("Forum accounts only have between 4-15 characters.."));
+				cObj.send(CmdCompile.genericPopup("Forum accounts only have between 2-24 characters.."));
 				cObj.loginState = 2;//return to login
 				cObj.loginSubState = 1;//return to login
 			}

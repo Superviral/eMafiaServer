@@ -276,7 +276,6 @@ public class MatchCmd {
 	}
 	public static void rolesearch(Character c, String phrase, byte[] data){
 		//lets user search database for roles...
-		//XXX how many roles to show at a time? 10 for now
 		//-rolesearch (aff) (cat) (page)
 		//(parameters):
 		//	aff (text)- display list of roles in the inputted affiation
