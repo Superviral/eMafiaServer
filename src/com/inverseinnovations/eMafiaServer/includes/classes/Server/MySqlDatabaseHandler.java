@@ -22,6 +22,7 @@ public class MySqlDatabaseHandler extends Thread{
 	private Connection con = null;
 	private PreparedStatement st = null;
 	private ResultSet rs = null;
+	private boolean connected = false;
 
 	/**
 	 * Creates instance for MySQL database references
@@ -33,7 +34,15 @@ public class MySqlDatabaseHandler extends Thread{
 		this.start();
 	}
 	public void run(){
-		this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+		if(this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS)){
+			Base.mysqlReady();
+		}
+	}
+	public boolean getConnected(){
+		return connected;
+	}
+	public void setConnected(boolean connect){
+		this.connected = connect;
 	}
 	/**
 	 * Initilizes and connects to defined MySQL Database
@@ -41,35 +50,39 @@ public class MySqlDatabaseHandler extends Thread{
 	 * @param user DB username
 	 * @param password DB password
 	 */
-	private void init(String url, String user, String password){
+	private boolean init(String url, String user, String password){
 		try {
 			Class.forName("com.mysql.jdbc.Driver");//.newInstance();
 			con = DriverManager.getConnection(url, user, password);
 
 			if(con != null){
+				setConnected(true);
 				Base.Console.config("MySQL DB connected to "+url+"");
 			}
-			else{Base.program_faults++;Base.Console.severe("MySQL DB failed to connect, server will not run correctly!");}
+			else{Base.program_faults++;Base.Console.severe("MySQL DB failed to connect, server will not run correctly!");setConnected(false);}
 		}
 		catch(SQLException e){
 			Base.program_faults++;
 			if(e.getSQLState().equals("28000")){
 				Base.Console.severe("MySQL DB username/password incorrect, cannot connect. Server will not run correctly!");
+				setConnected(false);
 			}
 			else{
 				Base.Console.severe("MySQL DB failed to connect, server will not run correctly!");
+				setConnected(false);
 				Base.Console.printStackTrace(e);
 			}
 		}
 		catch (Exception e) {
 			Base.program_faults++;
 			Base.Console.severe("MySQL DB failed to connect, server will not run correctly!");
+			setConnected(false);
 			Base.Console.printStackTrace(e);
 
 		}
-		finally{
-			Base.mysqlReady();
-		}
+		//finally{
+			return this.getConnected();
+		//}
 	}
 	/**
 	 * Loads all Usergroups into the game(If usergroups change and are reloaded, there might be some issues)
@@ -108,6 +121,16 @@ public class MySqlDatabaseHandler extends Thread{
 			while(rs.next()){
 				list.put(i, rs.getInt("id"));
 				i++;
+			}
+		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return grabRoleCatList(setup,aff, cat);
+			}
+			else{
+				Base.Console.severe("Error retrieving Role Catergory List");Base.Console.printStackTrace(e);
 			}
 		}
 		catch (SQLException e){Base.Console.severe("Error retrieving Role Catergory List");Base.Console.printStackTrace(e);}
@@ -186,6 +209,16 @@ public class MySqlDatabaseHandler extends Thread{
 					role.targetablesDay2=rs.getInt("targetsD2");
 			}
 			else{Base.Console.warning("ERROR NO RESULTS for id "+id+"!\n");}
+		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return grabRole(id);
+			}
+			else{
+				Base.Console.severe("GrabRole error");Base.Console.printStackTrace(e);
+			}
 		}
 		catch (SQLException e){Base.Console.severe("GrabRole error");Base.Console.printStackTrace(e);}
 		return role;
@@ -316,6 +349,17 @@ public class MySqlDatabaseHandler extends Thread{
 				}
 				theReturn = true;
 			}
+			catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+				Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+				if(getConnected()){
+					this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+					return addEditRole(role, newRole, version, setup);
+				}
+				else{
+					Base.Console.severe("Error in insertRole");
+					Base.Console.printStackTrace(e);
+				}
+			}
 			catch (SQLException e) {
 				Base.Console.severe("Error in insertRole");
 				Base.Console.printStackTrace(e);
@@ -363,6 +407,16 @@ public class MySqlDatabaseHandler extends Thread{
 					list.add(new Role(null, rs.getInt("id"),rs.getString("name"),setup,rs.getString("affiliation"), category));//,category);
 			}
 		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return searchRoles(aff, cat, page);
+			}
+			else{
+				Base.Console.severe("searchRole error");Base.Console.printStackTrace(e);
+			}
+		}
 		catch (SQLException e){Base.Console.severe("searchRole error");Base.Console.printStackTrace(e);}
 		return list;
 	}
@@ -373,7 +427,7 @@ public class MySqlDatabaseHandler extends Thread{
 	 * @param pass inputted password(should already be in MD5 format)
 	 * @return ArrayList<Object>[boolean success, String username, int usergroup]
 	 */
-	public HashMap<String,Object> connectUserPass(String username, String pass) {//$pass must already be passed in MD5 format
+	public HashMap<String,Object> connectUserPass(String username, String pass){//$pass must already be passed in MD5 format
 		username = username.toLowerCase();
 		HashMap<String,Object> data = new HashMap<String,Object>();
 		try{
@@ -402,8 +456,20 @@ public class MySqlDatabaseHandler extends Thread{
 				data.put("success",new Boolean(false));
 			}
 		}
-		catch(Exception e){
-			Base.Console.severe("MySqlDatabaseHanlder.ConnectUserPass error");
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return connectUserPass(username, pass);
+			}
+			else{
+				Base.Console.severe("MySqlDatabaseHandler.ConnectUserPass error");
+				Base.Console.printStackTrace(e);
+				data.put("success",new Boolean(false));
+			}
+		}
+		catch(Exception e){//com.mysql.jdbc.exceptions.jdbc4.CommunicationsException
+			Base.Console.severe("MySqlDatabaseHandler.ConnectUserPass error");
 			Base.Console.printStackTrace(e);
 			data.put("success",new Boolean(false));
 		}
@@ -414,7 +480,7 @@ public class MySqlDatabaseHandler extends Thread{
 	 * @param username
 	 * @return int 0(no user exists),1(awaiting validation),2(has account),3(opt-out)
 	 */
-	public int checkUsername(String username) {
+	public int checkUsername(String username){
 		try{
 			//rs=st.executeQuery("SELECT * FROM user_account WHERE username='"+username+"'");
 			st = con.prepareStatement("SELECT * FROM user_account WHERE username=?");
@@ -445,6 +511,18 @@ public class MySqlDatabaseHandler extends Thread{
 				}
 			}
 		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return checkUsername(username);
+			}
+			else{
+				Base.Console.severe("MySqlDatabaseHanlder.CheckUsername error");
+				Base.Console.printStackTrace(e);
+				return 2;
+			}
+		}
 		catch(Exception e){
 			Base.Console.severe("MySqlDatabaseHanlder.CheckUsername error");
 			Base.Console.printStackTrace(e);
@@ -457,30 +535,65 @@ public class MySqlDatabaseHandler extends Thread{
 	 * Only Forum account names are possible
 	 * @param username
 	 * @param pass must be in MD5 format
-	 * @return boolean if creation was succesful
+	 * @return "pm_messagesent" if creation was succesful
 	 */
-	public String createAccount(String username, String pass) {
-		String temp = "";
-		String salt = generateSalt();
-		String crypt_password = crypt(pass,salt);
+	public String createAccount(String username, String pass){
 		Random rand;rand = new Random();
 		String token = StringFunctions.Base64encode(StringFunctions.substr(username, 1, 1)+rand.nextInt(9999999)+StringFunctions.substr(username, 0, 1));
 		token = token.replace("==", "s8").replace("=", "").replace("+/", "");
+		return createAccount(username, pass, token, "", false);
+	}
+	/**
+	 * Creates entry in database for new account to be verified
+	 * and PMs a token through the SC@ forum to the user, needed for verification<br>
+	 * Only Forum account names are possible
+	 * @param username
+	 * @param pass must be in MD5 format
+	 * @param token token to be used in verification
+	 * @param retry true is token already sent to forum
+	 * @return "pm_messagesent" if creation was succesful
+	 */
+	private String createAccount(String username, String pass, String token, String errorMsg, boolean retry){
+		String salt = generateSalt();
+		String crypt_password = crypt(pass,salt);
+		Random rand;rand = new Random();
 		Long reg_time = System.currentTimeMillis()/1000;
 		//TODO need to setup the said web service
-		if((temp = Base.ForumAPI.sendMsg(username,"eMafia Account Verification","[table][tr][td]Welcome to [B][COLOR=#DAA520]e[/COLOR]Mafia[/B], "+username+"![/td][/tr][tr][td][/td][/tr][tr][td] Your account has been created, but still needs verification within 24 hours. Below is your verification code:[/td][/tr][tr][td][CENTER][COLOR=WHITE][SIZE=6][B]"+token+"[/B][/SIZE][/COLOR][/CENTER][/td][/tr][tr][td][/td][/tr][tr][td] If you are not the one that started the creation process, please ignore this email or click the link below to never receive any messages about [B][COLOR=#DAA520]e[/COLOR]Mafia[/B] again(link not available at this moment, contact Apocist):[/td][/tr][tr][td][URL=http://eMafia.hikaritemple.com/spam?v="+token+"]http://eMafia.hikaritemple.com/spam?v="+token+"[/URL][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][/table]")).equals("pm_messagesent")){
+		if(retry == false){
+			errorMsg = Base.ForumAPI.sendMsg(username,"eMafia Account Verification",
+					"[table][tr][td]Welcome to [B][COLOR=#DAA520]e[/COLOR]Mafia[/B], "+username+"![/td][/tr]" +
+					"[tr][td][/td][/tr][tr][td] Your account has been created, but still needs verification within 24 hours. Below is your verification code:[/td][/tr]" +
+					"[tr][td][CENTER][COLOR=WHITE][SIZE=6][B]"+token+"[/B][/SIZE][/COLOR][/CENTER][/td][/tr]" +
+					"[tr][td][/td][/tr][tr][td] If you are not the one that started the creation process, please ignore this email or click the link below to never receive any messages about [B][COLOR=#DAA520]e[/COLOR]Mafia[/B] again(link not available at this moment, contact Apocist):[/td][/tr]" +
+					"[tr][td][URL=http://eMafia.hikaritemple.com/spam?v="+token+"]http://eMafia.hikaritemple.com/spam?v="+token+"[/URL][/td][/tr]" +
+					"[tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][/table]");
+		}
+		if(errorMsg.equals("pm_messagesent")){
 			try {
 				st = con.prepareStatement("INSERT INTO user_verify (username, pass, pass2, token, reg_time) VALUES (?,?,?,?,?)");
 				st.setString(1, username);st.setString(2, crypt_password);st.setString(3, salt);st.setString(4, token);st.setLong(5, reg_time);
 				st.executeUpdate();
-				return temp;
-			} catch (Exception e) {
+				return errorMsg;
+			}
+			catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+				Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+				if(getConnected()){
+					this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+					return createAccount(username, pass, token, errorMsg, true);
+				}
+				else{
+					Base.Console.severe("Verify Account error");
+					Base.Console.printStackTrace(e);
+					return "MySqlDatabaseHanlder.CreateAccount error";
+				}
+			}
+			catch (Exception e) {
 				Base.Console.severe("MySqlDatabaseHanlder.CreateAccount error");
 				Base.Console.printStackTrace(e);
 				return "MySqlDatabaseHanlder.CreateAccount error";
 			}
 		}
-		return temp;
+		return errorMsg;
 	}
 	/**
 	 * Checks if username/password/token combo is correct
@@ -527,6 +640,18 @@ public class MySqlDatabaseHandler extends Thread{
 					updateForumData(user);
 					return true;
 				}
+			}
+		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return verifyAccount(username, pass, verify);
+			}
+			else{
+				Base.Console.severe("Verify Account error");
+				Base.Console.printStackTrace(e);
+				return false;
 			}
 		}
 		catch(Exception e){
