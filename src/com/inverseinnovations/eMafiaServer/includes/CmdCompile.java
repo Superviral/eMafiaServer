@@ -143,8 +143,7 @@ public class CmdCompile {
 		return cmdCompiler(200,tN1+Constants.CMDVARDIVIDER+tN2+Constants.CMDVARDIVIDER+tD1+Constants.CMDVARDIVIDER+tD2);
 	}
 	public static byte[] setTimeOfDay(int phase){//201 set which phase it is
-		//return cmdBind(201,"");//TODO why is it ""?
-		return cmdCompiler(201,phase);//TODO why is it ""?
+		return cmdCompiler(201,phase);
 	}
 	public static byte[] setPlayerNum(int playerNum){//202 sets the playerNum
 		return cmdCompiler(202,playerNum);
@@ -296,6 +295,8 @@ public class CmdCompile {
 		data.onTeam = role.getOnTeam();
 		data.teamName = role.getTeamName();
 		data.teamWin = role.getTeamWin();
+		data.visibleTeam = role.getTeamVisible();
+		data.chatAtNight = role.getChatAtNight();
 		data.ersScript = role.getScriptMap();
 		return cmdCompiler(1001,data);
 	}

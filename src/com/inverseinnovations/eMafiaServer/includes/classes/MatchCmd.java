@@ -68,7 +68,7 @@ public class MatchCmd {
 			c.getMatch().gameCancel();
 		}
 	}
-	public static void getsetting(Character c, String phrase, byte[] data){//TODO need to set cmdCompile
+	public static void getsetting(Character c, String phrase, byte[] data){
 		Match m = c.getMatch();
 		c.send(CmdCompile.matchSettings(m));
 	}
@@ -315,7 +315,7 @@ public class MatchCmd {
 			c.getMatch().send(phrase,"roomSay",c);
 		}
 		else{
-			//now talk in assigned channels XXX check for non players
+			//now talk in assigned channels
 			c.getMatch().chatter(c.getPlayerNum(), phrase);
 		}
 	}

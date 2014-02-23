@@ -278,7 +278,7 @@ public class Match extends GameObject{
 	 */
 	public Players getDeadPlayer(int playerNum){//may need to check if non-existant depending how its used
 		Players player = null;
-		for(int i=0;i < graveyard.length;i++){//TODO: check that is going through ENTIRE array and not skipping the last one(<=)
+		for(int i=0;i < graveyard.length;i++){
 			if(graveyard[i].getPlayerNumber() == playerNum){
 				player = graveyard[i];
 				break;
@@ -761,7 +761,7 @@ public class Match extends GameObject{
 	 * @param fromPlayerNum the speaking players number
 	 * @param message the player is saying
 	 */
-	public void chatter(int fromPlayerNum, String message){//TODO expand ChatChannels greatly
+	public void chatter(int fromPlayerNum, String message){//TODO ChatChannels: expand greatly
 		if(getPhaseMain() == Constants.PHASEMAIN_INPLAY && fromPlayerNum != 0){//as long as in play
 			//cycle through each of his channels
 			for(int chanId : chatGroup.getPlayer(fromPlayerNum).channels.values()){
@@ -809,11 +809,10 @@ public class Match extends GameObject{
 	}
 	/** Returns number of votes required for democracy to kick in */
  	public int requiredVotes(){
- 		//XXX is thought majority vote was 50+%...FM is saying 51+%?
-		int required = (int) Math.ceil(getNumPlayersAlive() / 2);
-		if(required == (getNumPlayersAlive() / 2)){
+		int required = (int) Math.ceil(getNumPlayersAlive() / 2)+1;
+		/*if(required == (getNumPlayersAlive() / 2)){
 			required++;
-		}
+		}*/
 		return required;
 	}
 	/**Performs standard scriptProcess for the specified onEvent for all players by order of rolesActionOrder (Script, Role)
@@ -837,7 +836,7 @@ public class Match extends GameObject{
 		for(String action:actionCat){
 			ArrayList<Role> roleList = getRolesWithActionCat(action);
 			for(Role role:roleList){
-				for(Flag flag : role.getFlags().values()){//TODO flags test if work
+				for(Flag flag : role.getFlags().values()){//TODO Flags: test if work
 					if(flag.isScriptedPre()){
 						new scriptProcess(event, flag.getScriptPre(event), role);
 					}
@@ -848,7 +847,7 @@ public class Match extends GameObject{
 					}
 					catch(Exception e){Game.Base.Console.printStackTrace(e);}
 				}
-				for(Flag flag : role.getFlags().values()){//TODO flags test if work
+				for(Flag flag : role.getFlags().values()){//TODO Flags: test if work
 					if(flag.isScriptedPost()){
 						new scriptProcess(event, flag.getScriptPost(event), role);
 					}
@@ -862,7 +861,7 @@ public class Match extends GameObject{
 	 */
 	public void doScriptProcess(int playerNum, String event){
 		Role role = getPlayerRole(playerNum);
-		for(Flag flag : role.getFlags().values()){//TODO flags test if work
+		for(Flag flag : role.getFlags().values()){//TODO Flags" test if work
 			if(flag.isScriptedPre()){
 				new scriptProcess(event, flag.getScriptPre(event), role);
 			}
@@ -870,7 +869,7 @@ public class Match extends GameObject{
 		if(StringUtils.isNotEmpty(role.getScript(event))){//if there is a event script
 				new scriptProcess(event, role.getScript(event), role);//does event script
 		}
-		for(Flag flag : role.getFlags().values()){//TODO flags test if work
+		for(Flag flag : role.getFlags().values()){//TODO Flags" test if work
 			if(flag.isScriptedPost()){
 				new scriptProcess(event, flag.getScriptPost(event), role);
 			}
@@ -1161,7 +1160,6 @@ public class Match extends GameObject{
 	 */
 	public void setPhaseDayType(int phase){
 		this.phaseDayType = phase;
-		//TODO send cleint the time fo day
 		send(CmdCompile.setTimeOfDay(phase));
 	}
 	/**
@@ -1202,7 +1200,7 @@ public class Match extends GameObject{
 				getCharacter((getPlayer(i).getEID())).send(CmdCompile.matchStart());
 			}
 
-			//TODO thread delay here to allow players to view role
+			//TODO Match Delay needed here to allow players to view role
 			if(getSetting("start_game_at")==0) beginDay();//Start day sequence
 			else if(getSetting("start_game_at")==1) beginDiscuss();//Start discuss sequence
 			else if(getSetting("start_game_at")==2) beginNight();//Start night sequence
@@ -1239,7 +1237,7 @@ public class Match extends GameObject{
 						beginDay(this.timerremain);//if inno and paused time, go to 2(normal)
 					}
 					else if((this.timerremain - System.currentTimeMillis()) > 0){
-						beginDay((this.timerremain - Math.round((System.currentTimeMillis()/1000))) + 2);//XXX if time still remains for day, continue(add 2secs to make it worth it)
+						beginDay((this.timerremain - Math.round((System.currentTimeMillis()/1000))) + 2);
 					}
 					else{
 						beginNight();//if inno no time pause, go to 8(night)
@@ -1281,7 +1279,6 @@ public class Match extends GameObject{
 			}
 			break;
 		case Constants.PHASEMAIN_ENDGAME://at end game
-			//TODO after long wait, kill match
 			Game.Base.Console.debug("EndGame was just completed, booting all");
 			for(Character chara : characters.values()){
 				chara.leaveMatch();
@@ -1298,7 +1295,6 @@ public class Match extends GameObject{
 		if(noError){
 			for (int i = 1; i <= getNumChars(); i++){
 				RolesOrig origRole = roleSetup.get(i-1);
-				//TODO need ot check for id now
 				if(origRole.eID > 0){//if a role id...grab the single id instead of category
 					roles[i] = Game.Base.MySql.grabRole(origRole.eID);
 					roles[i].setMatch(this);
@@ -1367,7 +1363,6 @@ public class Match extends GameObject{
 				tempRole.setPlayerNum(i);
 				chatGroup.addPlayer(i);
 				chatGroup.addPlayerToChannel(i, "daychat", 1, 1);
-				//TODO add to team
 				if(tempRole.getOnTeam()){//should be on Team(change to getOnTeam())
 					if(StringUtils.isEmpty(tempRole.getTeamName())){tempRole.setTeamName(tempRole.getAffiliation());}
 					if(!teams.containsKey(tempRole.getTeamName())){teams.put(tempRole.getTeamName(), new Team(this,tempRole.getTeamName()));}//if non existant, make the team
@@ -1556,7 +1551,6 @@ public class Match extends GameObject{
 		playerDeathReasons(trialplayer,"Lynched","lynched by an angry mob");
 		killPlayer(trialplayer);
 		chatGroup.addPlayerToChannel(trialplayer, "daychat", 0, 1);//take away day talking rights, but still let listen
-		//XXX take away night talking rights
 		chatGroup.addPlayerToChannel(trialplayer, "deadchat", 1, 1);//allowing talking in deadchat
 		this.addAdvancePhaseTimer(5);
 		this.send(CmdCompile.timerStart(5));
@@ -1565,7 +1559,7 @@ public class Match extends GameObject{
 	}
 	/** Mode displays the winning teams and players as well as their roles. Adds timer to kill match after certain time*/
 	private void beginGameEnd(){
-		//TODO remove vote/target buttons
+		//TODO Client: remove vote/target buttons
 		//Check victoryConditctions for all players
 		Game.Base.Console.debug("The Game has completed...");
 		setPhaseMain(Constants.PHASEMAIN_ENDGAME);
@@ -1615,10 +1609,9 @@ public class Match extends GameObject{
 		}
 		message += "won the game!";
 		send(CmdCompile.chatScreen(message));
-		//TODO gameEnd lists off everyone's roles
+		//TODO GameEnd: lists off everyone's roles
 		this.addAdvancePhaseTimer(300);
 		this.send(CmdCompile.timerStart(300));
-		//TODO gameEnd needs to kick everyone eventually
 	}
 //////////////////////////
 ///////Dataholders////////
@@ -1630,7 +1623,7 @@ public class Match extends GameObject{
 		public String inGameName;
 		public int playerNumber;
 		public int roleNumber;
-		public String hexcolor = "FFFFFF";//TODO player colors to be set at a later point
+		public String hexcolor = "FFFFFF";//TODO Random Player Colors: to be set at a later point
 
 		public int getEID(){
 			return eID;
@@ -1739,8 +1732,8 @@ public class Match extends GameObject{
 		 * @param listenRights 0-none 1-normal 2-anonymous(can't see anyone's name)(unimplemented)
 		 */
 		public void addPlayerToChannel(int playerNum, String chanName, int talkRights, int listenRights){
-			//TODO need function to allow player to speak anonymously
-			//TODO need function for player not to see other speakers names
+			//TODO ChatChannel: need function to allow player to speak anonymously
+			//TODO ChatChannel: need function for player not to see other speakers names
 			if(players.containsKey(playerNum)){
 				for(ChatChannel channel : channels.values()){
 					if(channel.channelName.equals(chanName)){

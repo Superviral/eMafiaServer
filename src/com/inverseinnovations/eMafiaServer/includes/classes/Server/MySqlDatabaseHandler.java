@@ -166,8 +166,8 @@ public class MySqlDatabaseHandler extends Thread{
 						role.setOnTeam(true);
 						role.setTeamName(rs.getString("teamName"));
 						if(rs.getInt("teamWin") == 1){role.setTeamWin(true);}
-						if(rs.getInt("visibleTeam") == 1){}//TODO
-						if(rs.getInt("chatAtNight") == 1){}//TODO
+						if(rs.getInt("visibleTeam") == 1){role.setTeamVisible(true);}
+						if(rs.getInt("chatAtNight") == 1){role.setChatAtNight(true);}
 					}
 
 					role.setActionCat(rs.getString("actionCat"));
@@ -375,7 +375,6 @@ public class MySqlDatabaseHandler extends Thread{
 	 * @param page page row of 10
 	 */
 	public ArrayList<Role> searchRoles(String aff, String cat, int page){
-		//FIXME after setting MySQL's default values...been unable to pull ANY ANY
 		ArrayList<Role> list = new ArrayList<Role>();
 		//Role role = null;
 		page--;page = page*10;
@@ -558,7 +557,7 @@ public class MySqlDatabaseHandler extends Thread{
 		String crypt_password = crypt(pass,salt);
 		Random rand;rand = new Random();
 		Long reg_time = System.currentTimeMillis()/1000;
-		//TODO need to setup the said web service
+		//TODO SPAM: need to setup the said web service
 		if(retry == false){
 			errorMsg = Base.ForumAPI.sendMsg(username,"eMafia Account Verification",
 					"[table][tr][td]Welcome to [B][COLOR=#DAA520]e[/COLOR]Mafia[/B], "+username+"![/td][/tr]" +
@@ -673,15 +672,15 @@ public class MySqlDatabaseHandler extends Thread{
 			rs = st.executeQuery();
 			if(rs.next()){ // If match.
 				HashMap<String,String> forumData = Base.ForumAPI.parseViewMember(Base.ForumAPI.viewMember(username));
-				if(forumData.get("username").length() < 4){forumData.put("username", username);}
-				st = con.prepareStatement("UPDATE user_account SET forumid=?, forumjoindate=?, avatarurl=?, username=? WHERE username=?");
-				st.setInt(1, Integer.parseInt(forumData.get("forumid")));st.setLong(2, Long.parseLong(forumData.get("forumjoindate")));st.setString(3, forumData.get("avatarurl"));st.setString(4, forumData.get("username"));st.setString(5, username);
-				st.executeUpdate();
-				return true;
+				if(forumData.containsKey("username")){
+					if(forumData.get("username").length() < 2){forumData.put("username", username);}
+					st = con.prepareStatement("UPDATE user_account SET forumid=?, forumjoindate=?, avatarurl=?, username=? WHERE username=?");
+					st.setInt(1, Integer.parseInt(forumData.get("forumid")));st.setLong(2, Long.parseLong(forumData.get("forumjoindate")));st.setString(3, forumData.get("avatarurl"));st.setString(4, forumData.get("username"));st.setString(5, username);
+					st.executeUpdate();
+					return true;
+				}
 			}
-			else{
-				return false;
-			}
+			return false;
 		}
 		catch(Exception e){
 			Base.Console.severe("updateForumData error");
@@ -689,7 +688,7 @@ public class MySqlDatabaseHandler extends Thread{
 			return false;
 		}
 	}
-	//XXX is this secure enough?
+	//XXX Password Crypt: is this secure enough?
 	/**
 	 * Returns a crypted pass for database<br>
 	 * encSalt shall received from generateSalt() or from database directly

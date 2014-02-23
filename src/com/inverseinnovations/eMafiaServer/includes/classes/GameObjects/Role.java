@@ -47,6 +47,8 @@ public class Role extends GameObject{
 	private boolean onTeam = false;
 	private String teamName;
 	private boolean teamWin = false;
+	private boolean teamVisible = false;
+	private boolean chatAtNight = false;
 	private Map<String, Integer> customVarInt = new LinkedHashMap<String, Integer>();
 	private Map<String, String> customVarString = new LinkedHashMap<String, String>();
 	private Map<String, Boolean> customVarBoolean = new LinkedHashMap<String, Boolean>();
@@ -259,6 +261,22 @@ public class Role extends GameObject{
 	public void setTeamWin(boolean share){
 		teamWin = share;
 	}
+	/**Can see who teammates are?*/
+	public boolean getTeamVisible(){
+		return teamVisible;
+	}
+	/**Set if can see who teammates are*/
+	public void setTeamVisible(boolean visible){
+		teamVisible = visible;
+	}
+	/**Can chat with Team at Night?*/
+	public boolean getChatAtNight(){
+		return chatAtNight;
+	}
+	/**Set if can chat with Team at Night*/
+	public void setChatAtNight(boolean chat){
+		chatAtNight = chat;
+	}
 	/**Is game allowed to end?*/
 	public boolean getMayGameEnd(){
 		return mayGameEnd;
@@ -303,7 +321,7 @@ public class Role extends GameObject{
 	 */
 	public void visited(Role visitor){
 		addVisitedBy(visitor.getPlayerNum());
-		for(Flag flag : getFlags().values()){//TODO flags test if work
+		for(Flag flag : getFlags().values()){//TODO Flags" test if work
 			if(flag.isScriptedPre()){
 				new scriptProcess("onVisit", flag.getScriptPre("onVisit"), this, visitor);
 			}
@@ -311,7 +329,7 @@ public class Role extends GameObject{
 		if(StringUtils.isNotEmpty(getScript("onVisit"))){
 			new scriptProcess("onVisit", getScript("onVisit"), this, visitor);
 		}
-		for(Flag flag : getFlags().values()){//TODO flags test if work
+		for(Flag flag : getFlags().values()){//TODO Flags" test if work
 			if(flag.isScriptedPost()){
 				new scriptProcess("onVisit", flag.getScriptPost("onVisit"), this, visitor);
 			}

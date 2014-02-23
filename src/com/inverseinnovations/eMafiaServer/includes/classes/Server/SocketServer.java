@@ -104,7 +104,6 @@ public class SocketServer {
 			while(true){
 				try {
 					Socket ready = socket.accept();
-					//TODO first check if the socket already exists...later..
 					if(Server.clients.size() < Server.max_clients){
 						for (int i = Server.client_counter; i < 50; i++){
 							if(!Server.clients.containsKey(i)){

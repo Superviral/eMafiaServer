@@ -117,8 +117,8 @@ public class SocketClient extends Thread{
 			this.close();
 		}
 		catch (IOException e){
-			Server.Base.Console.warning("IOException on SocketClient(run) "+clientEID+"(Client-side closing bad?)");//XXX happens on client side... set to fine logging?
-			this.offline();//XXX may remove this if the player crashed
+			//Server.Base.Console.warning("IOException on SocketClient(run) "+clientEID+"(Client-side closing bad?)");
+			this.offline();
 			this.close();
 			//Server.Base.Console.printStackTrace(e);
 		}
@@ -178,7 +178,7 @@ public class SocketClient extends Thread{
 	 */
 	public void offline(){
 		if(ONLINE){
-			if(this.getCharEID()>0){//FIXME more work on the closing process
+			if(this.getCharEID()>0){//FIXME Character leave properly: more work on the closing process
 				Character me = Server.Base.Game.getCharacter(getCharEID());
 				if(me!=null){
 					if(me.getInGame()){
@@ -186,7 +186,7 @@ public class SocketClient extends Thread{
 							me.leave();
 						}
 						else{
-							//XXX if match is actually playing...
+							//XXX Character leave properly: if match is actually playing...
 
 						}
 					}

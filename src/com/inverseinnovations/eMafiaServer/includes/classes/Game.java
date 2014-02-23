@@ -83,14 +83,14 @@ public class Game {
 	public void addMatch(Match m){
 		this.matches.put(m.getEID(), m);
 		Base.Console.fine("\""+m.getName()+"\" match created");
-		//TODO add match to client's Match_List
+		//TODO Client: add match to client's Match_List
 	}
 	/**
 	 * Removes a Match from Game()
 	 */
 	public void removeMatch(Match m){
 		this.matches.remove(m.getEID());
-		//TODO remove match from client's Match_List
+		//TODO Client: remove match from client's Match_List
 	}
 	/**
 	 * Returns a Match based on id

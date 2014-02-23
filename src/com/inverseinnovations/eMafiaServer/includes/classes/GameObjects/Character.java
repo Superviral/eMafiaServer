@@ -178,7 +178,7 @@ public class Character extends GameObject{
 	/**
 	 * Removes the Character from the current Match if apart of one and rejoins the main Lobby
 	 */
-	public void leaveMatch(){//leave the match, join lobby FIXME:test npcs
+	public void leaveMatch(){//leave the match, join lobby
 		if(getInGame()){
 			this.leave();
 			if(this.getType() != Constants.TYPE_GAMEOB_NPC){
@@ -205,7 +205,7 @@ public class Character extends GameObject{
 	/**
 	 * Sets the Character and Client as offline, and disconnects Client
 	 */
-	public void setOffline(){//XXX need to perform chara deletion if no connection
+	public void setOffline(){
 		SocketClient cConn = this.getConnection();
 		if(cConn != null) cConn.offline();
 	}

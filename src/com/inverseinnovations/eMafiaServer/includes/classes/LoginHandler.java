@@ -144,6 +144,7 @@ public class LoginHandler {
 
 			HashMap<String,Object> data = Base.MySql.connectUserPass(cObj.usernameBit, cObj.pass1bit);
 			if((boolean)data.get("success") == true){
+				Base.MySql.updateForumData((String) data.get("username"));//update database with any possible new info
 				boolean charaFound = false;
 				for(Character charList : Base.Game.getCharacters().values()){
 					if(charList.getAccountId() == (Integer)data.get("accountid")){
