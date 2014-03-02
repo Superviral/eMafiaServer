@@ -125,10 +125,8 @@ public class Settings {
 			if(var != null && !var.equals("")){
 				return var;
 			}
-			else{
-				return defaultValue;
-			}
-    	}else return defaultValue;
+    	}
+		return defaultValue;
     }
     /** Attempt to retrieve the set int from settings.ini
      * @param varName
@@ -142,14 +140,8 @@ public class Settings {
 				if(StringFunctions.isInteger(var)){
 					return Integer.parseInt(var);
 				}
-				else{
-					return defaultValue;
-				}
-			}
-			else{
-				return defaultValue;
 			}
 	    }
-	    else return defaultValue;
+		return defaultValue;
     }
 }

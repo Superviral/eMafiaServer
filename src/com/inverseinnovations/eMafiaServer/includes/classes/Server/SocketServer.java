@@ -53,14 +53,14 @@ public class SocketServer {
 			boolean bound = false;
 
 			// Bind the socket to an address/port
-			while (time + 1000000000 > System.nanoTime() && !bound){
-				Base.Console.config("Attempting to bind to port "+this.port+"...");
-				bound = this.socket.isBound();
-				if (bound)
-					break;
-				else
-					Thread.sleep(1000);
-
+			synchronized(this){
+				while (time + 1000000000 > System.nanoTime() && !bound){
+					Base.Console.config("Attempting to bind to port "+this.port+"...");
+					bound = this.socket.isBound();
+					if (bound)
+						break;
+					this.wait(1000);
+				}
 			}
 
 			if(!bound){
@@ -161,24 +161,22 @@ public class SocketServer {
 			//------------Login done---------------
 			return;
 		}
-		else{
-			// Don't let the user spam us //
-			//if (System.currentTimeMillis() - cObj.getLastTime() <= 0.0002) {return;}
-			cObj.setLastTime();
-			String[] fsplit = cdata.split(" ", 2);//split off only first word..0 is command, 1 is parameters
-			com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character c = Base.Game.getCharacter(cObj.getCharEID());
-			if (c==null) return;
+		// Don't let the user spam us //
+		//if (System.currentTimeMillis() - cObj.getLastTime() <= 0.0002) {return;}
+		cObj.setLastTime();
+		String[] fsplit = cdata.split(" ", 2);//split off only first word..0 is command, 1 is parameters
+		com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character c = Base.Game.getCharacter(cObj.getCharEID());
+		if (c==null) return;
 
-			if (!fsplit[0].trim().equals("")){
-				if(fsplit.length == 1){
-					CmdHandler.processCmd(c,fsplit[0],null,data);
-				}
-				else{
-					CmdHandler.processCmd(c,fsplit[0],fsplit[1],data);
-				}
+		if (!fsplit[0].trim().equals("")){
+			if(fsplit.length == 1){
+				CmdHandler.processCmd(c,fsplit[0],null,data);
 			}
-			return;
+			else{
+				CmdHandler.processCmd(c,fsplit[0],fsplit[1],data);
+			}
 		}
+		return;
 	}
 	/**
 	 * Returns the Client based on id

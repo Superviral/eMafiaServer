@@ -63,11 +63,12 @@ public class scriptProcess {
 			Future<Boolean> task = executorService.submit(callable);
 			try{
 				// ok, wait for 15 seconds max
-				Boolean result = task.get(15, TimeUnit.SECONDS);
+				//Boolean result = task.get(15, TimeUnit.SECONDS);
+				task.get(15, TimeUnit.SECONDS);
 				if(scriptDebugging){match.Game.Base.Console.debug("Script finished with completely");}
 			}
 			catch (ExecutionException e) {
-				String theScriptor = "Unknown";
+				//String theScriptor = "Unknown";
 				String msg = "Script RuntimeException from "+scriptName+"...: "+e.getMessage();
 				match.Game.Base.Console.warning(msg);
 				match.send(CmdCompile.genericPopup(msg));

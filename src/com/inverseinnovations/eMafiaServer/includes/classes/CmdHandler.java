@@ -15,42 +15,31 @@ public class CmdHandler {
 	 * @param command The snytax
 	 * @param phrase parameters for snytax
 	 */
-	@SuppressWarnings("unused")
 	public static void processCmd(Character c,String command,String phrase,byte[] data){
-		//c.Game.Base.Console.debug("processCmd started: "+command+" "+phrase);
 		Class<?> clas = null;
 		if(c.getInGame() == false){clas = LobbyCmd.class;}
 		else{clas = MatchCmd.class;}//disable until it exists
-		if(clas != null){
-			if(!command.startsWith("-")){
-				if(phrase != null){command += " "+phrase;}
-				if(clas.equals(LobbyCmd.class)){LobbyCmd.say(c,command,data);}
-				else if(clas.equals(MatchCmd.class)){MatchCmd.say(c,command,data);}
-				return;
-			}
-			else{
-				command = command.toLowerCase().substring(1);
-				//c.Game.Base.Console.finest("prepped '"+command+" "+phrase+"' for invoke");
-				if(clas.equals(LobbyCmd.class)){
-					for(String fullword : LobbyCmd.CMDLIST){
-						//if(command.substring(1).equals(fullword.substring(0, command.length()))){//more processing version(allows short cmds)(debug only)
-						if(command.equals(fullword)){//less processing version(for releases)
-							doInvoke(grabMethod(clas,fullword),clas,c,phrase,data);
-						}
-					}
+		if(!command.startsWith("-")){
+			if(phrase != null){command += " "+phrase;}
+			if(clas.equals(LobbyCmd.class)){LobbyCmd.say(c,command,data);}
+			else if(clas.equals(MatchCmd.class)){MatchCmd.say(c,command,data);}
+			return;
+		}
+		command = command.toLowerCase().substring(1);
+		if(clas.equals(LobbyCmd.class)){
+			for(String fullword : LobbyCmd.CMDLIST){
+				if(command.equals(fullword)){//less processing version(for releases)
+					doInvoke(grabMethod(clas,fullword),clas,c,phrase,data);
 				}
-				else if(clas.equals(MatchCmd.class)){
-					for(String fullword : MatchCmd.CMDLIST){
-						//if(command.substring(1).equals(fullword.substring(0, command.length()))){//more processing version(allows short cmds)(debug only)
-						if(command.equals(fullword)){//less processing version(for releases)
-							doInvoke(grabMethod(clas,fullword),clas,c,phrase,data);
-						}
-					}
-				}
-				return;
 			}
 		}
-		//c.send(command+" is not understood.");
+		else if(clas.equals(MatchCmd.class)){
+			for(String fullword : MatchCmd.CMDLIST){
+				if(command.equals(fullword)){//less processing version(for releases)
+					doInvoke(grabMethod(clas,fullword),clas,c,phrase,data);
+				}
+			}
+		}
 		return;
 	}
 

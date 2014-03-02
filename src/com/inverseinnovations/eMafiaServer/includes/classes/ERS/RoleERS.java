@@ -142,6 +142,6 @@ public class RoleERS{
 	}
 	public void visit(RoleERS player){
 		Role theRole = role.Match.getPlayerRoleWithSwitch(player.getPlayerNum());
-		if(role != null){role.visited(role);}
+		if(role != null){role.visited(theRole);}
 	}
 }

@@ -129,9 +129,7 @@ public class MySqlDatabaseHandler extends Thread{
 				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
 				return grabRoleCatList(setup,aff, cat);
 			}
-			else{
-				Base.Console.severe("Error retrieving Role Catergory List");Base.Console.printStackTrace(e);
-			}
+			Base.Console.severe("Error retrieving Role Catergory List");Base.Console.printStackTrace(e);
 		}
 		catch (SQLException e){Base.Console.severe("Error retrieving Role Catergory List");Base.Console.printStackTrace(e);}
 		return list;
@@ -216,9 +214,7 @@ public class MySqlDatabaseHandler extends Thread{
 				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
 				return grabRole(id);
 			}
-			else{
-				Base.Console.severe("GrabRole error");Base.Console.printStackTrace(e);
-			}
+			Base.Console.severe("GrabRole error");Base.Console.printStackTrace(e);
 		}
 		catch (SQLException e){Base.Console.severe("GrabRole error");Base.Console.printStackTrace(e);}
 		return role;
@@ -355,10 +351,8 @@ public class MySqlDatabaseHandler extends Thread{
 					this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
 					return addEditRole(role, newRole, version, setup);
 				}
-				else{
-					Base.Console.severe("Error in insertRole");
-					Base.Console.printStackTrace(e);
-				}
+				Base.Console.severe("Error in insertRole");
+				Base.Console.printStackTrace(e);
 			}
 			catch (SQLException e) {
 				Base.Console.severe("Error in insertRole");
@@ -412,9 +406,7 @@ public class MySqlDatabaseHandler extends Thread{
 				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
 				return searchRoles(aff, cat, page);
 			}
-			else{
-				Base.Console.severe("searchRole error");Base.Console.printStackTrace(e);
-			}
+			Base.Console.severe("searchRole error");Base.Console.printStackTrace(e);
 		}
 		catch (SQLException e){Base.Console.severe("searchRole error");Base.Console.printStackTrace(e);}
 		return list;
@@ -461,11 +453,9 @@ public class MySqlDatabaseHandler extends Thread{
 				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
 				return connectUserPass(username, pass);
 			}
-			else{
-				Base.Console.severe("MySqlDatabaseHandler.ConnectUserPass error");
-				Base.Console.printStackTrace(e);
-				data.put("success",new Boolean(false));
-			}
+			Base.Console.severe("MySqlDatabaseHandler.ConnectUserPass error");
+			Base.Console.printStackTrace(e);
+			data.put("success",new Boolean(false));
 		}
 		catch(Exception e){//com.mysql.jdbc.exceptions.jdbc4.CommunicationsException
 			Base.Console.severe("MySqlDatabaseHandler.ConnectUserPass error");
@@ -488,27 +478,21 @@ public class MySqlDatabaseHandler extends Thread{
 			if(rs.next()){ // If match.
 				return 2;
 			}
-			else{
-				//rs=st.executeQuery("SELECT * FROM user_verify WHERE username='"+username+"'");
-				st = con.prepareStatement("SELECT * FROM user_verify WHERE username=?");
-				st.setString(1,username);
-				rs=st.executeQuery();
-				if(rs.next()){ // If match.
-					return 1;
-				}
-				else{
-					//rs=st.executeQuery("SELECT * FROM user_spam WHERE username='"+username+"'");
-					st = con.prepareStatement("SELECT * FROM user_spam WHERE username=?");
-					st.setString(1,username);
-					rs=st.executeQuery();
-					if(rs.next()){ // If match.
-						return 3;
-					}
-					else{
-						return 0;
-					}
-				}
+			//rs=st.executeQuery("SELECT * FROM user_verify WHERE username='"+username+"'");
+			st = con.prepareStatement("SELECT * FROM user_verify WHERE username=?");
+			st.setString(1,username);
+			rs=st.executeQuery();
+			if(rs.next()){ // If match.
+				return 1;
 			}
+			//rs=st.executeQuery("SELECT * FROM user_spam WHERE username='"+username+"'");
+			st = con.prepareStatement("SELECT * FROM user_spam WHERE username=?");
+			st.setString(1,username);
+			rs=st.executeQuery();
+			if(rs.next()){ // If match.
+				return 3;
+			}
+			return 0;
 		}
 		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
 			Base.Console.severe("MySqlDatabase disconnected..attempting connection");
@@ -516,11 +500,9 @@ public class MySqlDatabaseHandler extends Thread{
 				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
 				return checkUsername(username);
 			}
-			else{
-				Base.Console.severe("MySqlDatabaseHanlder.CheckUsername error");
-				Base.Console.printStackTrace(e);
-				return 2;
-			}
+			Base.Console.severe("MySqlDatabaseHanlder.CheckUsername error");
+			Base.Console.printStackTrace(e);
+			return 2;
 		}
 		catch(Exception e){
 			Base.Console.severe("MySqlDatabaseHanlder.CheckUsername error");
@@ -555,7 +537,6 @@ public class MySqlDatabaseHandler extends Thread{
 	private String createAccount(String username, String pass, String token, String errorMsg, boolean retry){
 		String salt = generateSalt();
 		String crypt_password = crypt(pass,salt);
-		Random rand;rand = new Random();
 		Long reg_time = System.currentTimeMillis()/1000;
 		//TODO SPAM: need to setup the said web service
 		if(retry == false){
@@ -580,11 +561,9 @@ public class MySqlDatabaseHandler extends Thread{
 					this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
 					return createAccount(username, pass, token, errorMsg, true);
 				}
-				else{
-					Base.Console.severe("Verify Account error");
-					Base.Console.printStackTrace(e);
-					return "MySqlDatabaseHanlder.CreateAccount error";
-				}
+				Base.Console.severe("Verify Account error");
+				Base.Console.printStackTrace(e);
+				return "MySqlDatabaseHanlder.CreateAccount error";
 			}
 			catch (Exception e) {
 				Base.Console.severe("MySqlDatabaseHanlder.CreateAccount error");
@@ -632,7 +611,7 @@ public class MySqlDatabaseHandler extends Thread{
 						st.setString(1, user);
 						st.executeUpdate();
 					}
-					HashMap<String,String> forumData = Base.ForumAPI.parseViewMember(Base.ForumAPI.viewMember(user));
+					//HashMap<String,String> forumData = Base.ForumAPI.parseViewMember(Base.ForumAPI.viewMember(user));
 					st = con.prepareStatement("INSERT INTO user_account (username, pass, pass2, reg_time, usergroup) VALUES (?,?,?,?,?)");
 					st.setString(1, user);st.setString(2, crypt_password);st.setString(3, salt);st.setLong(4, reg_time);st.setInt(5, usergroup);
 					st.executeUpdate();
@@ -647,11 +626,9 @@ public class MySqlDatabaseHandler extends Thread{
 				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
 				return verifyAccount(username, pass, verify);
 			}
-			else{
-				Base.Console.severe("Verify Account error");
-				Base.Console.printStackTrace(e);
-				return false;
-			}
+			Base.Console.severe("Verify Account error");
+			Base.Console.printStackTrace(e);
+			return false;
 		}
 		catch(Exception e){
 			Base.Console.severe("Verify Account error");
@@ -707,7 +684,7 @@ public class MySqlDatabaseHandler extends Thread{
 	private String generateSalt(){
 		Random rand = new Random();
 		String front = "$"+rand.nextInt(9)+StringFunctions.rndChar();
-		String back = java.lang.Character.toString(StringFunctions.rndChar())+rand.nextInt(9)+java.lang.Character.toString(StringFunctions.rndChar());char whee;
+		String back = java.lang.Character.toString(StringFunctions.rndChar())+rand.nextInt(9)+java.lang.Character.toString(StringFunctions.rndChar());
 		return front+BCrypt.gensalt(12)+back;
 	}
 	/**Prints MySql version to the Console*/

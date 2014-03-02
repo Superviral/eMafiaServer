@@ -296,19 +296,15 @@ public class SC2MafiaAPI extends Thread{
 				if(getConnected()){
 					return sendMsg(user, title, message);
 				}
-				else{
-					return errorMsg;
-				}
+				return errorMsg;
 			}
 			else{
 				Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
 				return errorMsg;
 			}
 		}
-		else{
-			Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
-			return errorMsg;
-		}
+		Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
+		return errorMsg;
 	}
 	/**Grabs all data with this username - must be parsed with parseViewMember*/
 	public LinkedTreeMap<String, Object> viewMember(String user){

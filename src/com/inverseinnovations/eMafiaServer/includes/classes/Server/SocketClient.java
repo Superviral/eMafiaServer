@@ -50,8 +50,6 @@ public class SocketClient extends Thread{
 	 * Sets the Client to continue reading
 	 */
 	public void run(){
-		String line , input = "";
-
 		try{
 			ipAddress = socket.getInetAddress().getHostAddress();//get ip
 			//get socket writing and reading streams

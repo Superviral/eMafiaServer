@@ -14,6 +14,7 @@ import java.util.Random;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.apache.commons.lang3.StringUtils;
 
 import com.inverseinnovations.eMafiaServer.includes.CmdCompile;
@@ -111,7 +112,7 @@ public class Match extends GameObject{
 			this.settings.put(setting, value);
 			return true;
 		}
-		else return false;
+		return false;
 	}
 	/**
 	 * Returns the value of inputted setting
@@ -122,7 +123,7 @@ public class Match extends GameObject{
 		if(this.settings.containsKey(setting)){
 			return this.settings.get(setting);
 		}
-		else return null;
+		return null;
 	}
 	/**Returns the match chatController*/
 	public ChatGroup chatController(){
@@ -255,7 +256,7 @@ public class Match extends GameObject{
 	 */
 	public Players getPlayer(int playerNum){//may need to check if non-existant depending how its used
 		if(getAlivePlayer(playerNum) != null)return getAlivePlayer(playerNum);
-		else return getDeadPlayer(playerNum);
+		return getDeadPlayer(playerNum);
 	}
 	/**Returns Player and takes into account of playerNum switches
 	 * @param playerNum
@@ -288,7 +289,7 @@ public class Match extends GameObject{
 	}
 	/**Returns number of total Players */
 	public int getNumPlayers(){
-		return players.length + 1;
+		return players.length - 1;
 	}
 	/** Returns number of players listed as 'living' */
 	public int getNumPlayersAlive(){
@@ -319,6 +320,81 @@ public class Match extends GameObject{
 			this.ballot[i] = 0;
 		}
 		this.send(CmdCompile.voteCountClear());
+	}
+	/**
+	 * Gives each player a random color
+	 */
+	private void assignRandomColors(){
+		ArrayList<String> primarys = new ArrayList<String>();
+			primarys.add("FF0000");//bright red
+			primarys.add("00FF00");//bright green
+			primarys.add("0000FF");//bright blue
+			primarys.add("FFFF00");//bright yellow
+			primarys.add("00FFFF");//bright cyan
+			primarys.add("FF00FF");//bright magenta
+			primarys.add("FFFFFF");//white
+			primarys.add("181818");//'black' XXX should make pure black to be visible?
+		ArrayList<String> secondarys = new ArrayList<String>();
+			secondarys.add("800000");//dark red
+			secondarys.add("003300");//dark green
+			secondarys.add("000006");//dark blue
+			secondarys.add("336600");//brown
+			secondarys.add("006666");//dark cyan
+			secondarys.add("660066");//dark magenta
+			secondarys.add("a0a0a0");//gray
+		ArrayList<String> tetras = new ArrayList<String>();
+			tetras.add("ff6699");//pink
+			tetras.add("ff6600");//orange
+			tetras.add("6600cc");//purple
+			tetras.add("666633");//warped green
+		ArrayList<String> colorsToAssign = new ArrayList<String>();
+		//add number of colors as same as number of players
+		int numColors = 0;
+		while(getNumPlayers() != colorsToAssign.size()){
+			numColors = colorsToAssign.size();
+			if((getNumPlayers()-numColors) >= primarys.size()){
+				colorsToAssign.addAll(primarys);
+			}
+			else if(getNumPlayers() > numColors){
+				Collections.shuffle(primarys);
+				for(int i = 0;i < (getNumPlayers()-numColors);i++){
+					if(primarys.size() > i){
+						colorsToAssign.add(primarys.get(i));
+					}
+				}
+			}
+			numColors = colorsToAssign.size();
+			if((getNumPlayers()-numColors) >= secondarys.size()){
+				colorsToAssign.addAll(secondarys);
+			}
+			else if(getNumPlayers() > numColors){
+				Collections.shuffle(secondarys);
+				for(int i = 0;i < (getNumPlayers()-numColors);i++){
+					if(secondarys.size() > i){
+						colorsToAssign.add(secondarys.get(i));
+					}
+				}
+			}
+			numColors = colorsToAssign.size();
+			if((getNumPlayers()-numColors) >= tetras.size()){
+				colorsToAssign.addAll(tetras);
+			}
+			else if(getNumPlayers() > numColors){
+				Collections.shuffle(tetras);
+				for(int i = 0;i < (getNumPlayers()-numColors);i++){
+					if(tetras.size() > i){
+						colorsToAssign.add(tetras.get(i));
+					}
+				}
+			}
+		}
+		Collections.shuffle(colorsToAssign);
+		for(Players player:getPlayerList()){
+			if(colorsToAssign.size() > 0){
+				player.hexcolor = colorsToAssign.get(0);
+				colorsToAssign.remove(0);
+			}
+		}
 	}
 //////////////////////////
 ///////////Roles//////////
@@ -1100,7 +1176,7 @@ public class Match extends GameObject{
 			//end the game
 			return true;
 		}
-		else return false;
+		return false;
 	}
 	/** Starts timer to start game with current settings, only in setup mode */
 	public void gameStart(){
@@ -1299,26 +1375,24 @@ public class Match extends GameObject{
 					roles[i] = Game.Base.MySql.grabRole(origRole.eID);
 					roles[i].setMatch(this);
 					if(roles[i]==null){Game.Base.Console.warning("Could not retrieve a role the list based on manuel id, Start Cancelled");noError = false;break;}
-					else{origRole.roleName = roles[i].getName();}
+					origRole.roleName = roles[i].getName();
 				}
 				else{//grab category
 					Map<Integer, Integer> list = Game.Base.MySql.grabRoleCatList("DEFAULT",origRole.affiliation,origRole.category[0]);
 					if(list.size() == 0){send(CmdCompile.chatScreen("Could not retrieve a role from selected role category list("+origRole.affiliation+" "+origRole.category[0]+"), Start Cancelled"));noError=false;break;}
-					else{
-						int randNum = rand.nextInt(list.size());
-						Game.Base.Console.debug("getting random number: "+randNum);
-						Role role;
-						if((role = Game.Base.MySql.grabRole(list.get(randNum))) != null){
-							Game.Base.Console.debug("Grab random role "+role.getName());
+					int randNum = rand.nextInt(list.size());
+					Game.Base.Console.debug("getting random number: "+randNum);
+					Role role;
+					if((role = Game.Base.MySql.grabRole(list.get(randNum))) != null){
+						Game.Base.Console.debug("Grab random role "+role.getName());
 
-							roles[i] = role;
-							roles[i].setMatch(this);
-						}
-						else{//if error grabbing role
-							Game.Base.Console.warning("Error grabbing random role "+randNum);
-							noError = false;
-							break;
-						}
+						roles[i] = role;
+						roles[i].setMatch(this);
+					}
+					else{//if error grabbing role
+						Game.Base.Console.warning("Error grabbing random role "+randNum);
+						noError = false;
+						break;
 					}
 				}
 			}
@@ -1372,6 +1446,7 @@ public class Match extends GameObject{
 				}
 				tempRole = null;
 			}
+			assignRandomColors();
 		}
 		return noError;
 	}
@@ -1690,7 +1765,7 @@ public class Match extends GameObject{
 			if(channels.containsKey(id)){
 				return channels.get(id);
 			}
-			else return null;
+			return null;
 		}
 		/**Returns ChatChannel based on name*/
 		public ChatChannel getChannel(String name){
@@ -1723,7 +1798,7 @@ public class Match extends GameObject{
 			if(players.containsKey(playerNum)){
 				return players.get(playerNum);
 			}
-			else return null;
+			return null;
 		}
 		/**Adds/edits player to/from the Chat Channel
 		 * @param playerNum
@@ -1834,7 +1909,7 @@ public class Match extends GameObject{
 				if(players.containsKey(playerNum)){
 					return players.get(playerNum);
 				}
-				else return null;
+				return null;
 			}
 			/**Holds player Rights(priviledges) with the chat channel*/
 			private class PlayerRights{
@@ -1871,7 +1946,7 @@ public class Match extends GameObject{
 	 */
 	public boolean isAdvancePhaseTimer(){
 		if(this.timer == null)return false;
-		else return true;
+		return true;
 	}
 	/** Outputs remaining time of current timer
 	 * @return

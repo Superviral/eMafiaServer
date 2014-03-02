@@ -153,9 +153,9 @@ public class LoginHandler {
 						Character chara = Base.Game.getCharacter(charList.getEID());
 
 						//close the old client if exist
-						Integer oldClient;
+
 						if(chara.getConnection() != null){
-							oldClient = chara.getConnection().getClientEID();
+							//Integer oldClient = chara.getConnection().getClientEID();
 							chara.getConnection().close();
 						}
 

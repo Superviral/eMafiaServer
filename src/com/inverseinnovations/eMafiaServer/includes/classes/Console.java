@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.awt.Frame;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -38,16 +39,36 @@ class HtmlPane extends JTextPane {
 		caret.setUpdatePolicy(DefaultCaret.ALWAYS_UPDATE);//this will make it auto scroll to bottom
 	}
 	private String calcDate(long millisecs) {
-		SimpleDateFormat date_format = new SimpleDateFormat("yyMMdd hh:mm:ss");
+		SimpleDateFormat date_format = new SimpleDateFormat("yyMMdd HH:mm:ss");
 		Date resultdate = new Date(millisecs);
 		return date_format.format(resultdate);
 	}
-
+	public void saveLog(){
+		saveLog("log.html");
+	}
+	public void saveLog(String location){
+		FileWriter writer = null;
+		try {
+			writer = new FileWriter(location);
+			kit.write(writer, doc, 0, doc.getLength());
+		}
+		catch (IOException | BadLocationException e) {
+			printStackTrace(e);
+		}
+		finally {
+			try {
+				writer.close();
+			}
+			catch (IOException e) {
+				printStackTrace(e);
+			}
+		}
+	}
 	public void append(String s){
 		try {
 			//lastMsg = s;
 			//System.out.print(s);
-			kit.insertHTML(doc, doc.getLength(), s, 0, 0, null);
+			kit.insertHTML(doc, doc.getLength(), s+"<br>", 0, 0, null);
 			//this.select(this.getHeight(),0);
 		}
 		catch (BadLocationException e) {}
@@ -117,7 +138,19 @@ public class Console extends Frame{
 		);
 		setVisible(true);
 	}
-	//TODO Allow saving log to file...need advanced system to save in sections
+	/**
+	 * Saves the current Console to an html file - log.html
+	 */
+	public void saveLog(){
+		output.saveLog();
+	}
+	/**
+	 * Saves the current Console to an html file named as (location)
+	 * @param location filename
+	 */
+	public void saveLog(String location){
+		output.saveLog(location);
+	}
 	/**Log stackTraces, replaces standard printStackTrace
 	 * @param e Exception*/
 	public void printStackTrace(Exception e){

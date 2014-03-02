@@ -408,12 +408,10 @@ public class MatchCmd {
 				Random rand;rand = new Random();
 				String name = "NPC "+rand.nextInt(5001);
 				Character newc = new Character(c.Game, name, 5);
-				if (newc != null){
-					newc.setType(Constants.TYPE_GAMEOB_NPC);
-					newc.joinMatch(match);
-					c.send(CmdCompile.chatScreen(name+" created"));
-					c.Game.Base.Console.fine("Logging "+name+" in!");
-				}
+				newc.setType(Constants.TYPE_GAMEOB_NPC);
+				newc.joinMatch(match);
+				c.send(CmdCompile.chatScreen(name+" created"));
+				c.Game.Base.Console.fine("Logging "+name+" in!");
 			}
 		}
 	}

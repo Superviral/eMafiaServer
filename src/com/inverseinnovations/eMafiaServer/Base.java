@@ -19,20 +19,18 @@ public class Base {
 	public Game Game = new Game(this);
 
 	public Base(){
-		//This is just to keep the server running
 		synchronized(this){
 			while (GAME_IS_RUNNING){
 				try {
 					this.wait();
 				}
 				catch (InterruptedException e) {
-					Console.severe("Base Thread sleep error");
 					Console.printStackTrace(e);
 				}
 			}
 		}
 		Console.warning("The eMafia Server is no longer running.");
-		//TODO save the log here at program close
+		Console.saveLog();
 		System.exit(0);
 	}
 	/**
@@ -64,6 +62,6 @@ public class Base {
 		this.notify();
 	}
 	public static void main(String[] args) {
-		Base eMafiaServer = new Base();
+		new Base();
 	}
 }

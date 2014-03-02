@@ -4,7 +4,6 @@ Copyright (C) 2012  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
 
 import com.inverseinnovations.eMafiaServer.includes.CmdCompile;
@@ -45,7 +44,6 @@ public class LobbyCmd {
 	}
 	public static void match(Character c, String phrase, byte[] data) {
 		String[] ephrase = phrase.split(" ");
-		Map<Integer, Match> matchs = c.Game.getMatchs();
 		Match match;
 		if(ephrase.length > 0){
 			if(ephrase[0].equals("list")){
