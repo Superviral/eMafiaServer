@@ -27,7 +27,7 @@ public class LobbyCmd {
 		//admin commands
 		//"_show_commands","_shutdown","timer_add","_setupbots","_makenpc","_force"
 		//experimental commands
-		"test","var_dump"
+		"test","var_dump","_newthread","_newpost"
 	};
 	public static void charaupdate(Character c, String phrase, byte[] data) {
 		String[] ephrase = phrase.split(" ");
@@ -181,5 +181,32 @@ public class LobbyCmd {
 			c.Game.Base.Console.warning("EID: "+entry.getValue().getEID()+" | Name: "+entry.getValue().getName()+" | Players: "+entry.getValue().getNumChars());// + "/" + entry.getValue();
 		}
 	}
+	public static void _newthread(Character c, String phrase, byte[] data) {
+		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
+		c.Game.Base.Console.debug("Attempting new thread");
+		String threadMsg = c.Game.Base.ForumAPI.newThread("292", "This is just a test, do not panic", phrase);
+		if(StringFunctions.isInteger(threadMsg)){
+			c.Game.Base.Console.debug("New Thread successful... ID is "+threadMsg);
+		}
+		else{
+			c.Game.Base.Console.debug("New Thread failed... : "+threadMsg);
+		}
+		//2 in general
+		//292 is OnGoing
+		return;
+	}
+	public static void _newpost(Character c, String phrase, byte[] data) {
+		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
+		c.Game.Base.Console.debug("Attempting new post");
+		String postMsg = c.Game.Base.ForumAPI.newPost("26832", phrase);
+		if(StringFunctions.isInteger(postMsg)){
+			c.Game.Base.Console.debug("New Reply successful...");
+		}
+		else{
+			c.Game.Base.Console.debug("New Reply failed... : "+postMsg);
+		}
 
+		//2 in general
+		return;
+	}
 }

@@ -1698,7 +1698,7 @@ public class Match extends GameObject{
 		public String inGameName;
 		public int playerNumber;
 		public int roleNumber;
-		public String hexcolor = "FFFFFF";//TODO Random Player Colors: to be set at a later point
+		public String hexcolor = "FFFFFF";
 
 		public int getEID(){
 			return eID;

@@ -65,343 +65,6 @@ public class SC2MafiaAPI extends Thread{
 		this.setDaemon(true);
 		this.start();
 	}
-	public void run(){
-		Properties props = System.getProperties();
-		String errorMsg;
-		//handshake with the forum
-		if((errorMsg = responseError(init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),false))) == null){
-			Base.Console.config("SC2Mafia Forum API connected.");
-			//attempt to login
-			loginAttempt();
-		}
-		else{
-			Base.Console.warning("SC2Mafia Forum API unable to connect! Registration is disabled. Reason: '"+errorMsg+"'");
-			setConnected(false);
-		}
-	}
-	/**
-	 * Gets the API key.
-	 *
-	 * @return the API key
-	 */
-	public String getAPIkey() {
-		return apikey;
-	}
-	/**
-	 * Sets the API key.
-	 *
-	 * @param apikey
-	 *            the new API key
-	 */
-	public void setAPIkey(String apikey) {
-		this.apikey = apikey;
-	}
-	/**
-	 * Gets the URL of api.php
-	 *
-	 * @return the URL
-	 */
-	public String getAPIURL() {
-		return apiURL;
-	}
-	/**
-	 * Sets the URL of api.php
-	 *
-	 * @param apiURL
-	 *            the new URL
-	 */
-	public void setAPIURL(String apiURL) {
-		this.apiURL = apiURL;
-	}
-	/**
-	 * Gets the API access token.
-	 *
-	 * @return the API access token
-	 */
-	private String getAPIAccessToken() {
-		return apiAccessToken;
-	}
-	/**
-	 * Sets the API access token. You shouldn't need to use this if you use the
-	 * init function.
-	 *
-	 * @param apiAccessToken
-	 *            the new API access token
-	 */
-	private void setAPIAccessToken(String apiAccessToken) {
-		this.apiAccessToken = apiAccessToken;
-	}
-	/**
-	 * Gets the API client ID.
-	 *
-	 * @return the API client ID
-	 */
-	public String getAPIClientID() {
-		return apiClientID;
-	}
-	/**
-	 * Sets the API client ID. You shouldn't need to use this if you use the
-	 * init function.
-	 *
-	 * @param apiClientID
-	 *            the new API client ID
-	 */
-	public void setAPIClientID(String apiClientID) {
-		this.apiClientID = apiClientID;
-	}
-	/**
-	 * Gets the secret value.
-	 *
-	 * @return the secret value
-	 */
-	private String getSecret() {
-		return secret;
-	}
-	/**
-	 * Sets the secret value. You shouldn't need to use this if you use the init
-	 * function.
-	 *
-	 * @param secret
-	 *            the new secret value
-	 */
-	private void setSecret(String secret) {
-		this.secret = secret;
-	}
-	/**
-	 * Sets if the API successfully connected to the Forum
-	 */
-	public void setConnected(boolean arg){
-		this.CONNECTED = arg;
-	}
-	/**
-	 * Returns if connected AND logged into sc2maf forum
-	 */
-	public boolean getConnected(){
-		return CONNECTED;
-	}
-	/**Grabs the 'errormessage' from within the json pulled form callMethod()
-	 * Known errors:
-	 * 		pm_messagesent = message successfully sent
-	 * 		pmrecipientsnotfound = Forum user doesn't exist
-	 * 		invalid_accesstoken
-	 * @param response data from callMethod()
-	 * @return the 'errormessage' inside, if none: null
-	 */
-	@SuppressWarnings("rawtypes")
-	public String responseError(LinkedTreeMap<String, Object> response){
-		//LinkedTreeMap response = (LinkedTreeMap) response2;
-		String theReturn = null;
-		String className = null;
-		if(response != null){
-			if(response.containsKey("response")){
-				//response -> errormessage
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
-					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						theReturn = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
-					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
-						if(errors.length > 0){
-							theReturn = errors[0].toString();
-						}
-					}
-					else{
-						Base.Console.warning("responseError  response -> errormessage type unknown: "+className);
-					}
-				}
-				else if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
-					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
-					if(HTML.containsKey("postpreview")){
-						className = HTML.get("postpreview").getClass().getName();
-						if(className.equals("com.google.gson.internal.LinkedTreeMap")){
-							LinkedTreeMap postpreview = (LinkedTreeMap) HTML.get("postpreview");
-							if(postpreview.containsKey("errorlist")){
-								className = postpreview.get("errorlist").getClass().getName();
-								if(className.equals("com.google.gson.internal.LinkedTreeMap")){
-									LinkedTreeMap errorlist = (LinkedTreeMap) postpreview.get("errorlist");
-									if(errorlist.containsKey("errors")){
-										className = errorlist.get("errors").getClass().getName();
-										if(className.equals("java.util.ArrayList")){
-											ArrayList errors = (ArrayList) errorlist.get("errors");
-											className = errors.get(0).getClass().getName();
-											if(className.equals("java.util.ArrayList")){
-												//response -> postpreview -> errorlist -> errors[0]
-												ArrayList errorSub = (ArrayList) errors.get(0);
-												theReturn = errorSub.get(0).toString();
-											}
-										}
-									}
-
-								}
-							}
-						}
-					}
-				}
-			}
-			else if(response.containsKey("custom")){
-				theReturn = (String) response.get("custom");
-			}
-		}
-		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
-		return theReturn;
-	}
-	/**
-	 * Attempts to login no more than 3 times
-	 */
-	public void loginAttempt(){
-		String errorMsg = "";
-		for(int i = 0;i < 3;i++){
-			errorMsg = responseError(login());if(errorMsg == null){errorMsg = "";}
-			if(errorMsg.equals("redirect_login")){//if login is succesful
-				Base.Console.config("SC2Mafia Forum API logged in.");
-				setConnected(true);
-				break;
-			}
-		}
-		if(!errorMsg.equals("redirect_login")){//login failed
-			Base.Console.warning("SC2Mafia Forum API unable to login! Registration is disabled. Reason: '"+errorMsg+"'");
-			setConnected(false);
-		}
-
-
-	}
-	/**Login using the Game Master credientals*/
-	private LinkedTreeMap<String, Object> login(){
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("vb_login_username", Base.Settings.GAMEMASTERNAME);
-		params.put("vb_login_password", Base.Settings.GAMEMASTERPASS);
-		return callMethod("login_login", params, true);
-	}
-	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
-	 * @param user
-	 * @param title subject
-	 * @param message
-	 * @return
-	 */
-	public String sendMsg(String user,String title,String message){
-		String errorMsg;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("title", title);
-		params.put("message", message);
-		params.put("recipients", user);
-		params.put("signature", "1");
-		errorMsg = responseError(callMethod("private_insertpm", params, true));
-		if(errorMsg != null){
-			if(errorMsg.equals("pm_messagesent")){
-				return errorMsg;
-			}
-			else if(errorMsg.equals("nopermission_loggedout")){
-				loginAttempt();
-				if(getConnected()){
-					return sendMsg(user, title, message);
-				}
-				return errorMsg;
-			}
-			else{
-				Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
-				return errorMsg;
-			}
-		}
-		Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
-		return errorMsg;
-	}
-	/**Grabs all data with this username - must be parsed with parseViewMember*/
-	public LinkedTreeMap<String, Object> viewMember(String user){
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("username", user);
-		return callMethod("member", params, true);
-	}
-	/** Parses json from viewMember into
-	 * username
-	 * forumid
-	 * forumjoindate
-	 * avatarurl
-	 * @param response from viewMember (callMethod)
-	 * @return HashMap<String, String>
-	 */
-	@SuppressWarnings("rawtypes")
-	public HashMap<String, String> parseViewMember(LinkedTreeMap<String, Object> response){
-		HashMap<String, String> theReturn = new HashMap<String, String>();
-		theReturn.put("forumid", null);
-		theReturn.put("forumjoindate", null);
-		theReturn.put("avatarurl", null);
-		String className = null;
-		if(response.containsKey("response")){
-			//response -> prepared
-			if(((LinkedTreeMap)response.get("response")).containsKey("prepared")){
-				className = ((LinkedTreeMap)response.get("response")).get("prepared").getClass().getName();
-				if(className.equals("com.google.gson.internal.LinkedTreeMap")){
-					LinkedTreeMap prepared = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("prepared");
-					if(prepared.containsKey("username")){
-						className = prepared.get("username").getClass().getName();
-						if(className.equals("java.lang.String")){
-							theReturn.put("username", (String) prepared.get("username"));
-						}
-					}
-					if(prepared.containsKey("userid")){
-						className = prepared.get("userid").getClass().getName();
-						if(className.equals("java.lang.String")){
-							theReturn.put("forumid", (String) prepared.get("userid"));
-						}
-					}
-					if(prepared.containsKey("joindate")){
-						className = prepared.get("joindate").getClass().getName();
-						if(className.equals("java.lang.String")){
-							theReturn.put("forumjoindate", (String) prepared.get("joindate"));
-						}
-					}
-					if(prepared.containsKey("avatarurl")){
-						className = prepared.get("avatarurl").getClass().getName();
-						if(className.equals("java.lang.String")){
-							theReturn.put("avatarurl", (String) prepared.get("avatarurl"));
-						}
-					}
-				}
-			}
-		}
-		return theReturn;
-	}
-	/**
-	 * Inits the connection to SC2MafiaForum and retrieves the secret
-	 *
-	 * @param clientname
-	 *            the name of the client
-	 * @param clientversion
-	 *            the version of the client
-	 * @param platformname
-	 *            the name of the platform this application is running on
-	 * @param platformversion
-	 *            the version of the platform this application is running on
-	 * @param uniqueid
-	 *            the unique ID of the client. This should be different for each
-	 *            user, and remain the same across sessions
-	 * @return the array returned by the server
-	 * @throws IOException
-	 *             If the URL is wrong, or a connection is unable to be made for
-	 *             whatever reason.
-	 */
-	private LinkedTreeMap<String, Object> init(String clientname, String clientversion,String platformname, String platformversion, String uniqueid, boolean loggedIn){// throws IOException{
-		try{
-			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("clientname", clientname);
-			params.put("clientversion", clientversion);
-			params.put("platformname", platformname);
-			params.put("platformversion", platformversion);
-			params.put("uniqueid", uniqueid);
-			LinkedTreeMap<String, Object> initvalues = callMethod("api_init", params, loggedIn);
-			apiAccessToken = (String) initvalues.get("apiaccesstoken");
-			apiClientID = String.valueOf(initvalues.get("apiclientid"));
-			if((String) initvalues.get("secret") != null){secret = (String) initvalues.get("secret");}
-			//Base.Console.debug("apiAccessToken = "+apiAccessToken);
-			//Base.Console.debug("apiClientID = "+apiClientID);
-			//Base.Console.debug("secret = "+secret);
-			return initvalues;
-		}
-		catch(Exception e){
-			return null;
-		}
-	}
 	/**
 	 * Calls a method through the API.
 	 *
@@ -478,6 +141,431 @@ public class SC2MafiaAPI extends Thread{
 			Base.Console.printStackTrace(e);
 		}
 		return map;
+	}
+	/**
+	 * Gets the API access token.
+	 *
+	 * @return the API access token
+	 */
+	private String getAPIAccessToken() {
+		return apiAccessToken;
+	}
+	/**
+	 * Gets the API client ID.
+	 *
+	 * @return the API client ID
+	 */
+	public String getAPIClientID() {
+		return apiClientID;
+	}
+	/**
+	 * Gets the API key.
+	 *
+	 * @return the API key
+	 */
+	public String getAPIkey() {
+		return apikey;
+	}
+	/**
+	 * Gets the URL of api.php
+	 *
+	 * @return the URL
+	 */
+	public String getAPIURL() {
+		return apiURL;
+	}
+	/**
+	 * Returns if connected AND logged into sc2maf forum
+	 */
+	public boolean getConnected(){
+		return CONNECTED;
+	}
+	/**
+	 * Gets the secret value.
+	 *
+	 * @return the secret value
+	 */
+	private String getSecret() {
+		return secret;
+	}
+	/**
+	 * Inits the connection to SC2MafiaForum and retrieves the secret
+	 *
+	 * @param clientname
+	 *            the name of the client
+	 * @param clientversion
+	 *            the version of the client
+	 * @param platformname
+	 *            the name of the platform this application is running on
+	 * @param platformversion
+	 *            the version of the platform this application is running on
+	 * @param uniqueid
+	 *            the unique ID of the client. This should be different for each
+	 *            user, and remain the same across sessions
+	 * @return the array returned by the server
+	 * @throws IOException
+	 *             If the URL is wrong, or a connection is unable to be made for
+	 *             whatever reason.
+	 */
+	private LinkedTreeMap<String, Object> init(String clientname, String clientversion,String platformname, String platformversion, String uniqueid, boolean loggedIn){// throws IOException{
+		try{
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("clientname", clientname);
+			params.put("clientversion", clientversion);
+			params.put("platformname", platformname);
+			params.put("platformversion", platformversion);
+			params.put("uniqueid", uniqueid);
+			LinkedTreeMap<String, Object> initvalues = callMethod("api_init", params, loggedIn);
+			apiAccessToken = (String) initvalues.get("apiaccesstoken");
+			apiClientID = String.valueOf(initvalues.get("apiclientid"));
+			if((String) initvalues.get("secret") != null){secret = (String) initvalues.get("secret");}
+			//Base.Console.debug("apiAccessToken = "+apiAccessToken);
+			//Base.Console.debug("apiClientID = "+apiClientID);
+			//Base.Console.debug("secret = "+secret);
+			return initvalues;
+		}
+		catch(Exception e){
+			return null;
+		}
+	}
+	/**Login using the Game Master credientals*/
+	private LinkedTreeMap<String, Object> login(){
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("vb_login_username", Base.Settings.GAMEMASTERNAME);
+		params.put("vb_login_password", Base.Settings.GAMEMASTERPASS);
+		return callMethod("login_login", params, true);
+	}
+	/**
+	 * Attempts to login no more than 3 times
+	 */
+	public void loginAttempt(){
+		String errorMsg = "";
+		for(int i = 0;i < 3;i++){
+			errorMsg = responseError(login());if(errorMsg == null){errorMsg = "";}
+			if(errorMsg.equals("redirect_login")){//if login is succesful
+				Base.Console.config("SC2Mafia Forum API logged in.");
+				setConnected(true);
+				break;
+			}
+		}
+		if(!errorMsg.equals("redirect_login")){//login failed
+			Base.Console.warning("SC2Mafia Forum API unable to login! Registration is disabled. Reason: '"+errorMsg+"'");
+			setConnected(false);
+		}
+
+
+	}
+	/**Attempts to post a new Thread in the forum, returns the posted Thread id for later use.
+	 * @param forumid
+	 * @param subject
+	 * @param message
+	 * @return int(int String) on success, errormsg otherwise
+	 */
+	public String newThread(String forumid,String subject,String message){
+		String errorMsg;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("forumid", forumid);
+		params.put("subject", subject);
+		params.put("message", message);
+		params.put("signature", "1");
+		errorMsg = responseError(callMethod("newthread_postthread", params, true));
+		if(errorMsg != null){
+			if(StringFunctions.isInteger(errorMsg)){//success
+				return errorMsg;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				loginAttempt();
+				if(getConnected()){
+					return newThread(forumid, subject, message);
+				}
+				return errorMsg;
+			}
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+				return newThread(forumid, subject, message);
+			}
+			else{
+				Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
+				return errorMsg;
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
+		return errorMsg;
+	}
+	/**Attempts to post a new reply in said Thread
+	 * @param threadid
+	 * @param message
+	 * @return int(in String) on success, errormsg otherwise
+	 */
+	public String newPost(String threadid,String message){
+		String errorMsg;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("threadid", threadid);
+		params.put("message", message);
+		params.put("signature", "1");
+		errorMsg = responseError(callMethod("newreply_postreply", params, true));
+		if(errorMsg != null){
+			if(StringFunctions.isInteger(errorMsg)){//success
+				return errorMsg;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				loginAttempt();
+				if(getConnected()){
+					return newPost(threadid, message);
+				}
+				return errorMsg;
+			}
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+				return newPost(threadid, message);
+			}
+			else{
+				Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
+				return errorMsg;
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
+		return errorMsg;
+	}
+	/** Parses json from viewMember into
+	 * username
+	 * forumid
+	 * forumjoindate
+	 * avatarurl
+	 * @param response from viewMember (callMethod)
+	 * @return HashMap<String, String>
+	 */
+	@SuppressWarnings("rawtypes")
+	public HashMap<String, String> parseViewMember(LinkedTreeMap<String, Object> response){
+		HashMap<String, String> theReturn = new HashMap<String, String>();
+		theReturn.put("forumid", null);
+		theReturn.put("forumjoindate", null);
+		theReturn.put("avatarurl", null);
+		String className = null;
+		if(response.containsKey("response")){
+			//response -> prepared
+			if(((LinkedTreeMap)response.get("response")).containsKey("prepared")){
+				className = ((LinkedTreeMap)response.get("response")).get("prepared").getClass().getName();
+				if(className.equals("com.google.gson.internal.LinkedTreeMap")){
+					LinkedTreeMap prepared = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("prepared");
+					if(prepared.containsKey("username")){
+						className = prepared.get("username").getClass().getName();
+						if(className.equals("java.lang.String")){
+							theReturn.put("username", (String) prepared.get("username"));
+						}
+					}
+					if(prepared.containsKey("userid")){
+						className = prepared.get("userid").getClass().getName();
+						if(className.equals("java.lang.String")){
+							theReturn.put("forumid", (String) prepared.get("userid"));
+						}
+					}
+					if(prepared.containsKey("joindate")){
+						className = prepared.get("joindate").getClass().getName();
+						if(className.equals("java.lang.String")){
+							theReturn.put("forumjoindate", (String) prepared.get("joindate"));
+						}
+					}
+					if(prepared.containsKey("avatarurl")){
+						className = prepared.get("avatarurl").getClass().getName();
+						if(className.equals("java.lang.String")){
+							theReturn.put("avatarurl", (String) prepared.get("avatarurl"));
+						}
+					}
+				}
+			}
+		}
+		return theReturn;
+	}
+	/**Grabs the 'errormessage' from within the json pulled form callMethod()
+	 * Known errors:
+	 * 		pm_messagesent = message successfully sent
+	 * 		pmrecipientsnotfound = Forum user doesn't exist
+	 * 		invalid_accesstoken
+	 * @param response data from callMethod()
+	 * @return the 'errormessage' inside, if none: null
+	 */
+	@SuppressWarnings("rawtypes")
+	public String responseError(LinkedTreeMap<String, Object> response){
+		//LinkedTreeMap response = (LinkedTreeMap) response2;
+		String theReturn = null;
+		String className = null;
+		if(response != null){
+			if(response.containsKey("response")){
+				//response -> errormessage
+				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
+					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
+					if(className.equals("java.lang.String")){
+						System.out.println("response->errormessage->java.lang.String");
+						theReturn = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
+						if(theReturn.equals("redirect_postthanks")){//this is for newthread and newpost
+							if(response.containsKey("show")){
+								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
+									theReturn = (String) ((LinkedTreeMap)response.get("show")).get("threadid");
+								}
+							}
+						}//end newthread and newpost
+					}
+					else if(className.equals("java.util.ArrayList")){
+						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
+						if(errors.length > 0){
+							theReturn = errors[0].toString();
+						}
+					}
+					else{
+						Base.Console.warning("responseError  response -> errormessage type unknown: "+className);
+					}
+				}
+				else if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
+					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
+					if(HTML.containsKey("postpreview")){
+						className = HTML.get("postpreview").getClass().getName();
+						if(className.equals("com.google.gson.internal.LinkedTreeMap")){
+							LinkedTreeMap postpreview = (LinkedTreeMap) HTML.get("postpreview");
+							if(postpreview.containsKey("errorlist")){
+								className = postpreview.get("errorlist").getClass().getName();
+								if(className.equals("com.google.gson.internal.LinkedTreeMap")){
+									LinkedTreeMap errorlist = (LinkedTreeMap) postpreview.get("errorlist");
+									if(errorlist.containsKey("errors")){
+										className = errorlist.get("errors").getClass().getName();
+										if(className.equals("java.util.ArrayList")){
+											ArrayList errors = (ArrayList) errorlist.get("errors");
+											className = errors.get(0).getClass().getName();
+											if(className.equals("java.util.ArrayList")){
+												//response -> postpreview -> errorlist -> errors[0]
+												ArrayList errorSub = (ArrayList) errors.get(0);
+												theReturn = errorSub.get(0).toString();
+											}
+										}
+									}
+
+								}
+							}
+						}
+					}
+				}
+				else if(((LinkedTreeMap)response.get("response")).containsKey("errorlist")){
+					ArrayList errorlist = (ArrayList) ((LinkedTreeMap)response.get("response")).get("errorlist");
+					Base.Console.debug("Unknown Responses(errorlsit ->): "+errorlist.toString());
+				}
+				else{//has response..but not common
+					Base.Console.debug("Unknown Responses: "+((LinkedTreeMap)response.get("response")).keySet().toString());
+				}
+			}
+			else if(response.containsKey("custom")){
+				theReturn = (String) response.get("custom");
+			}
+			//testing this:
+			System.out.println("all ->");
+			System.out.println(response.toString());
+		}
+		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
+		return theReturn;
+	}
+	public void run(){
+		Properties props = System.getProperties();
+		String errorMsg;
+		//handshake with the forum
+		if((errorMsg = responseError(init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),false))) == null){
+			Base.Console.config("SC2Mafia Forum API connected.");
+			//attempt to login
+			loginAttempt();
+		}
+		else{
+			Base.Console.warning("SC2Mafia Forum API unable to connect! Registration is disabled. Reason: '"+errorMsg+"'");
+			setConnected(false);
+		}
+	}
+	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
+	 * @param user
+	 * @param title subject
+	 * @param message
+	 * @return
+	 */
+	public String sendMsg(String user,String title,String message){
+		String errorMsg;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("title", title);
+		params.put("message", message);
+		params.put("recipients", user);
+		params.put("signature", "1");
+		errorMsg = responseError(callMethod("private_insertpm", params, true));
+		if(errorMsg != null){
+			if(errorMsg.equals("pm_messagesent")){
+				return errorMsg;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				loginAttempt();
+				if(getConnected()){
+					return sendMsg(user, title, message);
+				}
+				return errorMsg;
+			}
+			else{
+				Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
+				return errorMsg;
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
+		return errorMsg;
+	}
+	/**
+	 * Sets the API access token. You shouldn't need to use this if you use the
+	 * init function.
+	 *
+	 * @param apiAccessToken
+	 *            the new API access token
+	 */
+	private void setAPIAccessToken(String apiAccessToken) {
+		this.apiAccessToken = apiAccessToken;
+	}
+	/**
+	 * Sets the API client ID. You shouldn't need to use this if you use the
+	 * init function.
+	 *
+	 * @param apiClientID
+	 *            the new API client ID
+	 */
+	public void setAPIClientID(String apiClientID) {
+		this.apiClientID = apiClientID;
+	}
+	/**
+	 * Sets the API key.
+	 *
+	 * @param apikey
+	 *            the new API key
+	 */
+	public void setAPIkey(String apikey) {
+		this.apikey = apikey;
+	}
+	/**
+	 * Sets the URL of api.php
+	 *
+	 * @param apiURL
+	 *            the new URL
+	 */
+	public void setAPIURL(String apiURL) {
+		this.apiURL = apiURL;
+	}
+	/**
+	 * Sets if the API successfully connected to the Forum
+	 */
+	public void setConnected(boolean arg){
+		this.CONNECTED = arg;
+	}
+	/**
+	 * Sets the secret value. You shouldn't need to use this if you use the init
+	 * function.
+	 *
+	 * @param secret
+	 *            the new secret value
+	 */
+	private void setSecret(String secret) {
+		this.secret = secret;
+	}
+	/**Grabs all data with this username - must be parsed with parseViewMember*/
+	public LinkedTreeMap<String, Object> viewMember(String user){
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("username", user);
+		return callMethod("member", params, true);
 	}
 
 }
