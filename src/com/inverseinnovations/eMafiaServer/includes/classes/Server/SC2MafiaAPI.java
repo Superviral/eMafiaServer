@@ -142,6 +142,40 @@ public class SC2MafiaAPI extends Thread{
 		}
 		return map;
 	}
+	/**Attempts to edit a post based on the post id
+	 * @param postid
+	 * @param message
+	 * @return true on successs
+	 */
+	public boolean editPost(String postid,String message){
+		String errorMsg;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("postid", postid);
+		params.put("message", message);
+		params.put("signature", "1");
+		errorMsg = responseError(callMethod("editpost_updatepost", params, true));
+		boolean theReturn = false;
+		if(errorMsg != null){
+			if(errorMsg.equals("redirect_editthanks")){//success
+				return true;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				loginAttempt();
+				if(getConnected()){
+					return editPost(postid, message);
+				}
+				theReturn = false;
+			}
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+				return editPost(postid, message);
+			}
+			else{
+				theReturn = false;
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable edit post! Reason: '"+errorMsg+"'");
+		return theReturn;
+	}
 	/**
 	 * Gets the API access token.
 	 *
@@ -256,6 +290,7 @@ public class SC2MafiaAPI extends Thread{
 
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id for later use.
+	 * Returns two numbers seperated by a space on success.'(threadid) (postid)'
 	 * @param forumid
 	 * @param subject
 	 * @param message
@@ -270,7 +305,7 @@ public class SC2MafiaAPI extends Thread{
 		params.put("signature", "1");
 		errorMsg = responseError(callMethod("newthread_postthread", params, true));
 		if(errorMsg != null){
-			if(StringFunctions.isInteger(errorMsg)){//success
+			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
 				return errorMsg;
 			}
 			else if(errorMsg.equals("nopermission_loggedout")){
@@ -294,9 +329,9 @@ public class SC2MafiaAPI extends Thread{
 	/**Attempts to post a new reply in said Thread
 	 * @param threadid
 	 * @param message
-	 * @return int(in String) on success, errormsg otherwise
+	 * @return true on success
 	 */
-	public String newPost(String threadid,String message){
+	public boolean newPost(String threadid,String message){
 		String errorMsg;
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("threadid", threadid);
@@ -304,26 +339,71 @@ public class SC2MafiaAPI extends Thread{
 		params.put("signature", "1");
 		errorMsg = responseError(callMethod("newreply_postreply", params, true));
 		if(errorMsg != null){
-			if(StringFunctions.isInteger(errorMsg)){//success
-				return errorMsg;
+			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
+				return true;
 			}
 			else if(errorMsg.equals("nopermission_loggedout")){
 				loginAttempt();
 				if(getConnected()){
 					return newPost(threadid, message);
 				}
-				return errorMsg;
 			}
 			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
 				return newPost(threadid, message);
 			}
-			else{
-				Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
-				return errorMsg;
-			}
 		}
 		Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
-		return errorMsg;
+		return false;
+	}
+	@SuppressWarnings("rawtypes")
+	public ArrayList<Message> parseMessages(LinkedTreeMap<String, Object> response){
+		ArrayList<Message> messages = new ArrayList<Message>();
+		if(response != null){
+			if(response.containsKey("response")){
+				if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
+					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
+					if(HTML.containsKey("messagelist_periodgroups")){
+						ArrayList messageGroups = (ArrayList) HTML.get("messagelist_periodgroups");
+						for(Object obj : messageGroups){
+							LinkedTreeMap messageGroup = (LinkedTreeMap)obj;
+							if(messageGroup.containsKey("messagesingroup")){
+								if((double)(messageGroup.get("messagesingroup"))>0){//if there are messages
+									if(messageGroup.containsKey("messagelistbits")){
+										if(messageGroup.get("messagelistbits") instanceof LinkedTreeMap){//single message
+											Message parsedMessage = new Message();
+											LinkedTreeMap message = (LinkedTreeMap) messageGroup.get("messagelistbits");
+											parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
+											parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
+											parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
+											parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+
+											parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+											parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+											messages.add(parsedMessage);
+										}
+										else if(messageGroup.get("messagelistbits") instanceof ArrayList){//multiple messages
+											for(Object objInner : (ArrayList) messageGroup.get("messagelistbits")){
+												Message parsedMessage = new Message();
+												LinkedTreeMap message = (LinkedTreeMap) objInner;
+												parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
+												parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
+												parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
+												parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+
+												parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+												parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+												messages.add(parsedMessage);
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return messages;
 	}
 	/** Parses json from viewMember into
 	 * username
@@ -390,7 +470,7 @@ public class SC2MafiaAPI extends Thread{
 		String className = null;
 		if(response != null){
 			if(response.containsKey("response")){
-				//response -> errormessage
+				//errormessage
 				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
 					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
 					if(className.equals("java.lang.String")){
@@ -400,9 +480,10 @@ public class SC2MafiaAPI extends Thread{
 							if(response.containsKey("show")){
 								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
 									theReturn = (String) ((LinkedTreeMap)response.get("show")).get("threadid");
+									theReturn += " "+(double) ((LinkedTreeMap)response.get("show")).get("postid");
 								}
 							}
-						}//end newthread and newpost
+						}
 					}
 					else if(className.equals("java.util.ArrayList")){
 						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
@@ -414,9 +495,13 @@ public class SC2MafiaAPI extends Thread{
 						Base.Console.warning("responseError  response -> errormessage type unknown: "+className);
 					}
 				}
+				//HTML
 				else if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
 					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
-					if(HTML.containsKey("postpreview")){
+					if(HTML.containsKey("totalmessages")){
+						theReturn = "totalmessages";
+					}
+					else if(HTML.containsKey("postpreview")){
 						className = HTML.get("postpreview").getClass().getName();
 						if(className.equals("com.google.gson.internal.LinkedTreeMap")){
 							LinkedTreeMap postpreview = (LinkedTreeMap) HTML.get("postpreview");
@@ -442,6 +527,7 @@ public class SC2MafiaAPI extends Thread{
 						}
 					}
 				}
+				//errorlist
 				else if(((LinkedTreeMap)response.get("response")).containsKey("errorlist")){
 					ArrayList errorlist = (ArrayList) ((LinkedTreeMap)response.get("response")).get("errorlist");
 					Base.Console.debug("Unknown Responses(errorlsit ->): "+errorlist.toString());
@@ -454,7 +540,7 @@ public class SC2MafiaAPI extends Thread{
 				theReturn = (String) response.get("custom");
 			}
 			//testing this:
-			System.out.println("all ->");
+			System.out.println("all ->");//XXX: for testing
 			System.out.println(response.toString());
 		}
 		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
@@ -566,6 +652,44 @@ public class SC2MafiaAPI extends Thread{
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("username", user);
 		return callMethod("member", params, true);
+	}
+	public ArrayList<Message> viewPMs(){
+		String errorMsg;
+		HashMap<String, String> params = new HashMap<String, String>();
+		LinkedTreeMap<String,Object> linkmap = callMethod("private_messagelist", params, true);
+		errorMsg = responseError(linkmap);
+		if(errorMsg != null){
+			if(errorMsg.equals("totalmessages")){//is the inbox
+				return parseMessages(linkmap);
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				loginAttempt();
+				if(getConnected()){
+					return viewPMs();
+				}
+			}
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+				return viewPMs();
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable view messages! Reason: '"+errorMsg+"'");
+		return null;
+	}
+
+
+	public class Message{
+		public String pmid;
+		public String sendtime;
+		public String statusicon;
+		public String title;
+		public int userid;
+		public String username;
+
+		public void setUserid(String id){
+			if(StringFunctions.isInteger(id)){
+				userid = Integer.parseInt(id);
+			}
+		}
 	}
 
 }
