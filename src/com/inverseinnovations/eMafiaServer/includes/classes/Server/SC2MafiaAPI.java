@@ -184,7 +184,13 @@ public class SC2MafiaAPI extends Thread{
 		params.put("vb_login_password", Base.Settings.GAMEMASTERPASS);
 		return callMethod("login_login", params, true);
 	}
-	/**Grabs all data with this username*/
+	/**Grabs all data with this username
+	 * Returning:
+	 * username
+	 * forumid
+	 * forumjoindate
+	 * avatarurl
+	 * */
 	public HashMap<String, String> forum_ViewMember(String user){
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("username", user);
@@ -515,6 +521,7 @@ public class SC2MafiaAPI extends Thread{
 				}
 			}
 		}
+		System.out.println(response.toString());
 		return theReturn;
 	}
 	/**Returns list of PMs in the inbox
@@ -539,7 +546,7 @@ public class SC2MafiaAPI extends Thread{
 				System.out.println("done with for");
 				return msgList;
 			}
-			else if(errorMsg.equals("nopermission_loggedout")){
+			else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 				forum_Login();
 				if(getConnected()){
 					return pm_ListPMs();
@@ -559,6 +566,16 @@ public class SC2MafiaAPI extends Thread{
 	 * @return
 	 */
 	public String pm_SendNew(String user,String title,String message){
+		return pm_SendNew( user, title, message, 0);
+	}
+	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
+	 * @param user
+	 * @param title subject
+	 * @param message
+	 * @return
+	 */
+	private String pm_SendNew(String user,String title,String message, int loop){
+		loop++;
 		String errorMsg;
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("title", title);
@@ -566,20 +583,24 @@ public class SC2MafiaAPI extends Thread{
 		params.put("recipients", user);
 		params.put("signature", "1");
 		errorMsg = parseResponse(callMethod("private_insertpm", params, true));
-		if(errorMsg != null){
-			if(errorMsg.equals("pm_messagesent")){
-				return errorMsg;
-			}
-			else if(errorMsg.equals("nopermission_loggedout")){
-				forum_Login();
-				if(getConnected()){
-					return pm_SendNew(user, title, message);
+		System.out.println("loop is "+loop);
+		Base.Console.warning("loop is "+loop);
+		if(loop < 5){//no inifinite loop by user
+			if(errorMsg != null){
+				if(errorMsg.equals("pm_messagesent")){
+					return errorMsg;
 				}
-				return errorMsg;
-			}
-			else{
-				Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
-				return errorMsg;
+				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")||errorMsg.equals("invalid_api_signature")){
+					//forum_Login();
+					this.start();
+					if(getConnected()){
+						return pm_SendNew(user, title, message,loop);
+					}
+					return errorMsg;
+				}
+				else if(errorMsg.equals("invalid_api_signature")){
+					return pm_SendNew( user, title, message,loop);
+				}
 			}
 		}
 		Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
@@ -597,15 +618,15 @@ public class SC2MafiaAPI extends Thread{
 	 * @param loop increasing int to prevent inifinite loops
 	 * @return
 	 */
-	public String pm_ViewPM(String pmId, int loop){
+	private String pm_ViewPM(String pmId, int loop){
 		String errorMsg = null;
 		if(pmId != null){
 			HashMap<String, String> params = new HashMap<String, String>();
 			params.put("pmid", pmId);
 			errorMsg = parseResponse(callMethod("private_showpm", params, true));
-			if(loop < 6){//no inifinite loop by user
+			if(loop < 5){//no inifinite loop by user
 				if(errorMsg != null){
-					if(errorMsg.equals("nopermission_loggedout")){
+					if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 						forum_Login();
 						if(getConnected()){
 							return pm_ViewPM(pmId, loop++);
@@ -636,7 +657,7 @@ public class SC2MafiaAPI extends Thread{
 			if(errorMsg.equals("redirect_editthanks")){//success
 				return true;
 			}
-			else if(errorMsg.equals("nopermission_loggedout")){
+			else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 				forum_Login();
 				if(getConnected()){
 					return post_Edit(postid, message);
@@ -669,7 +690,7 @@ public class SC2MafiaAPI extends Thread{
 			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
 				return true;
 			}
-			else if(errorMsg.equals("nopermission_loggedout")){
+			else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 				forum_Login();
 				if(getConnected()){
 					return post_New(threadid, message);
@@ -771,7 +792,7 @@ public class SC2MafiaAPI extends Thread{
 			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
 				return errorMsg;
 			}
-			else if(errorMsg.equals("nopermission_loggedout")){
+			else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 				forum_Login();
 				if(getConnected()){
 					return thread_New(forumid, subject, message);

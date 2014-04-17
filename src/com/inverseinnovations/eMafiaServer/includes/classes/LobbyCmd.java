@@ -29,7 +29,7 @@ public class LobbyCmd {
 		//admin commands
 		//"_show_commands","_shutdown","timer_add","_setupbots","_makenpc","_force"
 		//experimental commands
-		"test","var_dump","_editpost","_newthread","_newpost","_viewpms","_viewpm"
+		"test","var_dump","_editpost","_newthread","_newpost","_parsepms","_sendpm"
 	};
 	public static void charaupdate(Character c, String phrase, byte[] data) {
 		String[] ephrase = phrase.split(" ");
@@ -185,14 +185,9 @@ public class LobbyCmd {
 	}
 	public static void _editpost(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
-		c.Game.Base.Console.debug("Attempting edit post");
-		boolean postMsg = c.Game.Base.ForumAPI.post_Edit("436224", phrase);
-		if(postMsg){
-			c.Game.Base.Console.debug("Edit Reply successful...");
-		}
-		else{
-			c.Game.Base.Console.debug("Edit Reply failed... : "+postMsg);
-		}
+		c.Game.Base.Console.debug("Attempting send pm");
+		String theReturn = c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "You asked for it, you got.<br>Well...not much to say, I'm a bot after all.");
+		c.Game.Base.Console.debug("Attempting send pm");
 		return;
 	}
 	public static void _newthread(Character c, String phrase, byte[] data) {
@@ -227,27 +222,46 @@ public class LobbyCmd {
 		}
 		return;
 	}
-	public static void _viewpms(Character c, String phrase, byte[] data) {
+	public static void _parsepms(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting to view pms");
 		ArrayList<Message> PMlist = c.Game.Base.ForumAPI.pm_ListPMs();
 		if(PMlist != null){
-			c.Game.Base.Console.debug("view successful... there are "+PMlist.size()+" messages.");
+			System.out.println("PMList not null");
+			for(Message msg:PMlist){
+				System.out.println("PMList on a msg..");
+				if(msg.message.contains(" ")){
+					System.out.println("PMList msg contains space");
+					String[] cmdPhrase = msg.message.split(" ", 2);
+					String cmd = cmdPhrase[0];
+					String Phrase = cmdPhrase[1];
+
+					System.out.println("PMList split the msg...about to process");
+					ForumCmdHandler.processCmd(c.Game, msg.username, cmdPhrase[0], cmdPhrase[1]);
+					System.out.println("PMList sent PM ");
+				}
+				else{
+					System.out.println("PMList msg has no space");
+					ForumCmdHandler.processCmd(c.Game, msg.username, msg.message, null);
+					System.out.println("PMList sent PM ");
+				}
+			}
 		}
 		else{
 			c.Game.Base.Console.debug("view failed... : "+PMlist);
 		}
 		return;
 	}
-	public static void _viewpm(Character c, String phrase, byte[] data) {
+	public static void _sendpm(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting to view pm 150700");
-		String PmMsg = c.Game.Base.ForumAPI.pm_ViewPM("150700");
+		//HashMap<String,String> PmMsg = c.Game.Base.ForumAPI.forum_ViewMember(3359);
+		String PmMsg = c.Game.Base.ForumAPI.pm_SendNew("3359", "test", "hey pal! just testing this buddy out.");
 		if(PmMsg != null){
-			c.Game.Base.Console.debug("view successful...:"+PmMsg);
+			c.Game.Base.Console.debug("send successful...:"+PmMsg.toString());
 		}
 		else{
-			c.Game.Base.Console.debug("view failed... : "+PmMsg);
+			c.Game.Base.Console.debug("send failed... : "+PmMsg);
 		}
 		return;
 	}
