@@ -28,6 +28,21 @@ import com.inverseinnovations.eMafiaServer.includes.StringFunctions;
 
 /** A class to provide an easy to use wrapper around the vBulletin REST API.*/
 public class SC2MafiaAPI extends Thread{
+	public class Message{
+		public String pmid;
+		public String sendtime;
+		public String statusicon;
+		public String title;
+		public int userid;
+		public String username;
+		public String message;
+
+		public void setUserid(String id){
+			if(StringFunctions.isInteger(id)){
+				userid = Integer.parseInt(id);
+			}
+		}
+	}
 	public com.inverseinnovations.eMafiaServer.Base Base;
 	public boolean CONNECTED = false;
 	private String clientname;
@@ -153,7 +168,7 @@ public class SC2MafiaAPI extends Thread{
 		params.put("postid", postid);
 		params.put("message", message);
 		params.put("signature", "1");
-		errorMsg = responseError(callMethod("editpost_updatepost", params, true));
+		errorMsg = parseResponse(callMethod("editpost_updatepost", params, true));
 		boolean theReturn = false;
 		if(errorMsg != null){
 			if(errorMsg.equals("redirect_editthanks")){//success
@@ -275,7 +290,7 @@ public class SC2MafiaAPI extends Thread{
 	public void loginAttempt(){
 		String errorMsg = "";
 		for(int i = 0;i < 3;i++){
-			errorMsg = responseError(login());if(errorMsg == null){errorMsg = "";}
+			errorMsg = parseResponse(login());if(errorMsg == null){errorMsg = "";}
 			if(errorMsg.equals("redirect_login")){//if login is succesful
 				Base.Console.config("SC2Mafia Forum API logged in.");
 				setConnected(true);
@@ -288,6 +303,35 @@ public class SC2MafiaAPI extends Thread{
 		}
 
 
+	}
+	/**Attempts to post a new reply in said Thread
+	 * @param threadid
+	 * @param message
+	 * @return true on success
+	 */
+	public boolean newPost(String threadid,String message){
+		String errorMsg;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("threadid", threadid);
+		params.put("message", message);
+		params.put("signature", "1");
+		errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
+		if(errorMsg != null){
+			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
+				return true;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				loginAttempt();
+				if(getConnected()){
+					return newPost(threadid, message);
+				}
+			}
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+				return newPost(threadid, message);
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
+		return false;
 	}
 	/**Attempts to post a new Thread in the forum, returns the posted Thread id for later use.
 	 * Returns two numbers seperated by a space on success.'(threadid) (postid)'
@@ -303,7 +347,7 @@ public class SC2MafiaAPI extends Thread{
 		params.put("subject", subject);
 		params.put("message", message);
 		params.put("signature", "1");
-		errorMsg = responseError(callMethod("newthread_postthread", params, true));
+		errorMsg = parseResponse(callMethod("newthread_postthread", params, true));
 		if(errorMsg != null){
 			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
 				return errorMsg;
@@ -326,35 +370,10 @@ public class SC2MafiaAPI extends Thread{
 		Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
 		return errorMsg;
 	}
-	/**Attempts to post a new reply in said Thread
-	 * @param threadid
-	 * @param message
-	 * @return true on success
+	/**Parses response, designed specifically for gathering the list of all messages. Messages only have the header at this point, the actual message is not included
+	 * @param response
+	 * @return ArrayList<Message>
 	 */
-	public boolean newPost(String threadid,String message){
-		String errorMsg;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("threadid", threadid);
-		params.put("message", message);
-		params.put("signature", "1");
-		errorMsg = responseError(callMethod("newreply_postreply", params, true));
-		if(errorMsg != null){
-			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
-				return true;
-			}
-			else if(errorMsg.equals("nopermission_loggedout")){
-				loginAttempt();
-				if(getConnected()){
-					return newPost(threadid, message);
-				}
-			}
-			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
-				return newPost(threadid, message);
-			}
-		}
-		Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
-		return false;
-	}
 	@SuppressWarnings("rawtypes")
 	public ArrayList<Message> parseMessages(LinkedTreeMap<String, Object> response){
 		ArrayList<Message> messages = new ArrayList<Message>();
@@ -363,9 +382,8 @@ public class SC2MafiaAPI extends Thread{
 				if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
 					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
 					if(HTML.containsKey("messagelist_periodgroups")){
-						ArrayList messageGroups = (ArrayList) HTML.get("messagelist_periodgroups");
-						for(Object obj : messageGroups){
-							LinkedTreeMap messageGroup = (LinkedTreeMap)obj;
+						if(HTML.get("messagelist_periodgroups") instanceof LinkedTreeMap){
+							LinkedTreeMap messageGroup = (LinkedTreeMap) HTML.get("messagelist_periodgroups");
 							if(messageGroup.containsKey("messagesingroup")){
 								if((double)(messageGroup.get("messagesingroup"))>0){//if there are messages
 									if(messageGroup.containsKey("messagelistbits")){
@@ -399,11 +417,149 @@ public class SC2MafiaAPI extends Thread{
 								}
 							}
 						}
+						else if(HTML.get("messagelist_periodgroups") instanceof ArrayList){
+							ArrayList messageGroups = (ArrayList) HTML.get("messagelist_periodgroups");
+							for(Object obj : messageGroups){
+								LinkedTreeMap messageGroup = (LinkedTreeMap)obj;
+								if(messageGroup.containsKey("messagesingroup")){
+									if((double)(messageGroup.get("messagesingroup"))>0){//if there are messages
+										if(messageGroup.containsKey("messagelistbits")){
+											if(messageGroup.get("messagelistbits") instanceof LinkedTreeMap){//single message
+												Message parsedMessage = new Message();
+												LinkedTreeMap message = (LinkedTreeMap) messageGroup.get("messagelistbits");
+												parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
+												parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
+												parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
+												parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+
+												parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+												parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+												messages.add(parsedMessage);
+											}
+											else if(messageGroup.get("messagelistbits") instanceof ArrayList){//multiple messages
+												for(Object objInner : (ArrayList) messageGroup.get("messagelistbits")){
+													Message parsedMessage = new Message();
+													LinkedTreeMap message = (LinkedTreeMap) objInner;
+													parsedMessage.pmid = (String) ((LinkedTreeMap)message.get("pm")).get("pmid");
+													parsedMessage.sendtime = (String) ((LinkedTreeMap)message.get("pm")).get("sendtime");
+													parsedMessage.statusicon = (String) ((LinkedTreeMap)message.get("pm")).get("statusicon");
+													parsedMessage.title = (String) ((LinkedTreeMap)message.get("pm")).get("title");
+
+													parsedMessage.setUserid((String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("userid"));
+													parsedMessage.username = (String) ((LinkedTreeMap)((LinkedTreeMap) message.get("userbit")).get("userinfo")).get("username");
+													messages.add(parsedMessage);
+												}
+											}
+										}
+									}
+								}
+							}
+						}
 					}
 				}
 			}
 		}
 		return messages;
+	}
+	/**Grabs the 'errormessage' from within the json pulled form callMethod()
+	 * Known errors:
+	 * 		pm_messagesent = message successfully sent
+	 * 		pmrecipientsnotfound = Forum user doesn't exist
+	 * 		invalid_accesstoken
+	 * @param response data from callMethod()
+	 * @return the 'errormessage' inside, if none: null
+	 */
+	@SuppressWarnings("rawtypes")
+	public String parseResponse(LinkedTreeMap<String, Object> response){
+		//LinkedTreeMap response = (LinkedTreeMap) response2;
+		String theReturn = null;
+		String className = null;
+		if(response != null){
+			if(response.containsKey("response")){
+				//errormessage
+				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
+					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
+					if(className.equals("java.lang.String")){
+						System.out.println("response->errormessage->java.lang.String");
+						theReturn = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
+						if(theReturn.equals("redirect_postthanks")){//this is for newthread and newpost
+							if(response.containsKey("show")){
+								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
+									theReturn = (String) ((LinkedTreeMap)response.get("show")).get("threadid");
+									theReturn += " "+(double) ((LinkedTreeMap)response.get("show")).get("postid");
+								}
+							}
+						}
+					}
+					else if(className.equals("java.util.ArrayList")){
+						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
+						if(errors.length > 0){
+							theReturn = errors[0].toString();
+						}
+					}
+					else{
+						Base.Console.warning("responseError  response -> errormessage type unknown: "+className);
+					}
+				}
+				//HTML
+				else if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
+					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
+					if(HTML.containsKey("totalmessages")){
+						theReturn = "totalmessages";
+					}
+					else if(HTML.containsKey("postbit")){
+						if(HTML.get("postbit") instanceof LinkedTreeMap){
+							LinkedTreeMap postbit = (LinkedTreeMap) HTML.get("postbit");
+							if(postbit.containsKey("post")){
+								if(postbit.get("post") instanceof LinkedTreeMap){
+									LinkedTreeMap post = (LinkedTreeMap) postbit.get("post");
+									if(post.containsKey("message")){
+										theReturn = (String) post.get("message");
+									}
+								}
+							}
+						}
+					}
+					else if(HTML.containsKey("postpreview")){
+						if(HTML.get("postpreview") instanceof LinkedTreeMap){
+							LinkedTreeMap postpreview = (LinkedTreeMap) HTML.get("postpreview");
+							if(postpreview.containsKey("errorlist")){
+								if(postpreview.get("errorlist") instanceof LinkedTreeMap){
+									LinkedTreeMap errorlist = (LinkedTreeMap) postpreview.get("errorlist");
+									if(errorlist.containsKey("errors")){
+										if(errorlist.get("errors") instanceof ArrayList){
+											ArrayList errors = (ArrayList) errorlist.get("errors");
+											if(errors.get(0) instanceof ArrayList){
+												//response -> postpreview -> errorlist -> errors[0]
+												ArrayList errorSub = (ArrayList) errors.get(0);
+												theReturn = errorSub.get(0).toString();
+											}
+										}
+									}
+
+								}
+							}
+						}
+					}
+				}
+				//errorlist
+				else if(((LinkedTreeMap)response.get("response")).containsKey("errorlist")){
+					ArrayList errorlist = (ArrayList) ((LinkedTreeMap)response.get("response")).get("errorlist");
+					Base.Console.debug("Unknown Responses(errorlsit ->): "+errorlist.toString());
+				}
+				else{//has response..but not common
+					Base.Console.debug("Unknown Responses: "+((LinkedTreeMap)response.get("response")).keySet().toString());
+				}
+			}
+			else if(response.containsKey("custom")){
+				theReturn = (String) response.get("custom");
+			}
+			//testing this:
+			System.out.println("all ->");//XXX: for testing
+			System.out.println(response.toString());
+		}
+		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
+		return theReturn;
 	}
 	/** Parses json from viewMember into
 	 * username
@@ -455,102 +611,11 @@ public class SC2MafiaAPI extends Thread{
 		}
 		return theReturn;
 	}
-	/**Grabs the 'errormessage' from within the json pulled form callMethod()
-	 * Known errors:
-	 * 		pm_messagesent = message successfully sent
-	 * 		pmrecipientsnotfound = Forum user doesn't exist
-	 * 		invalid_accesstoken
-	 * @param response data from callMethod()
-	 * @return the 'errormessage' inside, if none: null
-	 */
-	@SuppressWarnings("rawtypes")
-	public String responseError(LinkedTreeMap<String, Object> response){
-		//LinkedTreeMap response = (LinkedTreeMap) response2;
-		String theReturn = null;
-		String className = null;
-		if(response != null){
-			if(response.containsKey("response")){
-				//errormessage
-				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
-					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
-					if(className.equals("java.lang.String")){
-						System.out.println("response->errormessage->java.lang.String");
-						theReturn = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
-						if(theReturn.equals("redirect_postthanks")){//this is for newthread and newpost
-							if(response.containsKey("show")){
-								if(((LinkedTreeMap)response.get("show")).containsKey("threadid")){
-									theReturn = (String) ((LinkedTreeMap)response.get("show")).get("threadid");
-									theReturn += " "+(double) ((LinkedTreeMap)response.get("show")).get("postid");
-								}
-							}
-						}
-					}
-					else if(className.equals("java.util.ArrayList")){
-						Object[] errors = ((ArrayList) ((LinkedTreeMap)response.get("response")).get("errormessage")).toArray();
-						if(errors.length > 0){
-							theReturn = errors[0].toString();
-						}
-					}
-					else{
-						Base.Console.warning("responseError  response -> errormessage type unknown: "+className);
-					}
-				}
-				//HTML
-				else if(((LinkedTreeMap)response.get("response")).containsKey("HTML")){
-					LinkedTreeMap HTML = (LinkedTreeMap) ((LinkedTreeMap)response.get("response")).get("HTML");
-					if(HTML.containsKey("totalmessages")){
-						theReturn = "totalmessages";
-					}
-					else if(HTML.containsKey("postpreview")){
-						className = HTML.get("postpreview").getClass().getName();
-						if(className.equals("com.google.gson.internal.LinkedTreeMap")){
-							LinkedTreeMap postpreview = (LinkedTreeMap) HTML.get("postpreview");
-							if(postpreview.containsKey("errorlist")){
-								className = postpreview.get("errorlist").getClass().getName();
-								if(className.equals("com.google.gson.internal.LinkedTreeMap")){
-									LinkedTreeMap errorlist = (LinkedTreeMap) postpreview.get("errorlist");
-									if(errorlist.containsKey("errors")){
-										className = errorlist.get("errors").getClass().getName();
-										if(className.equals("java.util.ArrayList")){
-											ArrayList errors = (ArrayList) errorlist.get("errors");
-											className = errors.get(0).getClass().getName();
-											if(className.equals("java.util.ArrayList")){
-												//response -> postpreview -> errorlist -> errors[0]
-												ArrayList errorSub = (ArrayList) errors.get(0);
-												theReturn = errorSub.get(0).toString();
-											}
-										}
-									}
-
-								}
-							}
-						}
-					}
-				}
-				//errorlist
-				else if(((LinkedTreeMap)response.get("response")).containsKey("errorlist")){
-					ArrayList errorlist = (ArrayList) ((LinkedTreeMap)response.get("response")).get("errorlist");
-					Base.Console.debug("Unknown Responses(errorlsit ->): "+errorlist.toString());
-				}
-				else{//has response..but not common
-					Base.Console.debug("Unknown Responses: "+((LinkedTreeMap)response.get("response")).keySet().toString());
-				}
-			}
-			else if(response.containsKey("custom")){
-				theReturn = (String) response.get("custom");
-			}
-			//testing this:
-			System.out.println("all ->");//XXX: for testing
-			System.out.println(response.toString());
-		}
-		//Base.Console.debug("SC2Mafia API return error: "+theReturn);
-		return theReturn;
-	}
 	public void run(){
 		Properties props = System.getProperties();
 		String errorMsg;
 		//handshake with the forum
-		if((errorMsg = responseError(init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),false))) == null){
+		if((errorMsg = parseResponse(init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),false))) == null){
 			Base.Console.config("SC2Mafia Forum API connected.");
 			//attempt to login
 			loginAttempt();
@@ -573,7 +638,7 @@ public class SC2MafiaAPI extends Thread{
 		params.put("message", message);
 		params.put("recipients", user);
 		params.put("signature", "1");
-		errorMsg = responseError(callMethod("private_insertpm", params, true));
+		errorMsg = parseResponse(callMethod("private_insertpm", params, true));
 		if(errorMsg != null){
 			if(errorMsg.equals("pm_messagesent")){
 				return errorMsg;
@@ -653,14 +718,63 @@ public class SC2MafiaAPI extends Thread{
 		params.put("username", user);
 		return callMethod("member", params, true);
 	}
+	/**Grabs the message from the PM specified by the pmID
+	 * @param pmId
+	 * @return
+	 */
+	public String viewPMmessage(String pmId){
+		return viewPMmessage(pmId, 0);
+	}
+	/**Grabs the message from the PM specified by the pmID
+	 * @param pmId
+	 * @param loop increasing int to prevent inifinite loops
+	 * @return
+	 */
+	public String viewPMmessage(String pmId, int loop){
+		String errorMsg = null;
+		if(pmId != null){
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("pmid", pmId);
+			errorMsg = parseResponse(callMethod("private_showpm", params, true));
+			if(loop < 6){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.equals("nopermission_loggedout")){
+						loginAttempt();
+						if(getConnected()){
+							return viewPMmessage(pmId, loop++);
+						}
+					}
+					else if(errorMsg.equals("invalid_api_signature")){
+						return viewPMmessage(pmId, loop++);
+					}
+				}
+			}
+		}
+		return errorMsg;
+	}
+
+
+	/**Returns list of PMs in the inbox
+	 * @return
+	 */
 	public ArrayList<Message> viewPMs(){
 		String errorMsg;
 		HashMap<String, String> params = new HashMap<String, String>();
 		LinkedTreeMap<String,Object> linkmap = callMethod("private_messagelist", params, true);
-		errorMsg = responseError(linkmap);
+		errorMsg = parseResponse(linkmap);
+		System.out.println("parsed the link map for errors");
 		if(errorMsg != null){
 			if(errorMsg.equals("totalmessages")){//is the inbox
-				return parseMessages(linkmap);
+				System.out.println("contains totalmessages");
+				ArrayList<Message> msgList = parseMessages(linkmap);
+				System.out.println("parsed the link map for PM arrayList");
+				System.out.println("has "+msgList.size()+" message(s)");
+				for(Message msg:msgList){
+					System.out.println("About to go through list for");
+					msg.message = viewPMmessage(msg.pmid);
+				}
+				System.out.println("done with for");
+				return msgList;
 			}
 			else if(errorMsg.equals("nopermission_loggedout")){
 				loginAttempt();
@@ -668,28 +782,12 @@ public class SC2MafiaAPI extends Thread{
 					return viewPMs();
 				}
 			}
-			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need to check this
 				return viewPMs();
 			}
 		}
 		Base.Console.warning("SC2Mafia Forum API unable view messages! Reason: '"+errorMsg+"'");
 		return null;
-	}
-
-
-	public class Message{
-		public String pmid;
-		public String sendtime;
-		public String statusicon;
-		public String title;
-		public int userid;
-		public String username;
-
-		public void setUserid(String id){
-			if(StringFunctions.isInteger(id)){
-				userid = Integer.parseInt(id);
-			}
-		}
 	}
 
 }
