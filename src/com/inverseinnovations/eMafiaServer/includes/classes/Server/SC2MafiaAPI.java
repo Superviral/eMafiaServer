@@ -157,39 +157,38 @@ public class SC2MafiaAPI extends Thread{
 		}
 		return map;
 	}
-	/**Attempts to edit a post based on the post id
-	 * @param postid
-	 * @param message
-	 * @return true on successs
+	/**
+	 * Attempts to login no more than 3 times
 	 */
-	public boolean editPost(String postid,String message){
-		String errorMsg;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("postid", postid);
-		params.put("message", message);
-		params.put("signature", "1");
-		errorMsg = parseResponse(callMethod("editpost_updatepost", params, true));
-		boolean theReturn = false;
-		if(errorMsg != null){
-			if(errorMsg.equals("redirect_editthanks")){//success
-				return true;
-			}
-			else if(errorMsg.equals("nopermission_loggedout")){
-				loginAttempt();
-				if(getConnected()){
-					return editPost(postid, message);
-				}
-				theReturn = false;
-			}
-			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
-				return editPost(postid, message);
-			}
-			else{
-				theReturn = false;
+	public void forum_Login(){
+		String errorMsg = "";
+		for(int i = 0;i < 3;i++){
+			errorMsg = parseResponse(forum_LoginDirect());if(errorMsg == null){errorMsg = "";}
+			if(errorMsg.equals("redirect_login")){//if login is succesful
+				Base.Console.config("SC2Mafia Forum API logged in.");
+				setConnected(true);
+				break;
 			}
 		}
-		Base.Console.warning("SC2Mafia Forum API unable edit post! Reason: '"+errorMsg+"'");
-		return theReturn;
+		if(!errorMsg.equals("redirect_login")){//login failed
+			Base.Console.warning("SC2Mafia Forum API unable to login! Registration is disabled. Reason: '"+errorMsg+"'");
+			setConnected(false);
+		}
+
+
+	}
+	/**Login using the Game Master credientals*/
+	private LinkedTreeMap<String, Object> forum_LoginDirect(){
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("vb_login_username", Base.Settings.GAMEMASTERNAME);
+		params.put("vb_login_password", Base.Settings.GAMEMASTERPASS);
+		return callMethod("login_login", params, true);
+	}
+	/**Grabs all data with this username*/
+	public HashMap<String, String> forum_ViewMember(String user){
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("username", user);
+		return parseViewMember(callMethod("member", params, true));
 	}
 	/**
 	 * Gets the API access token.
@@ -277,105 +276,12 @@ public class SC2MafiaAPI extends Thread{
 			return null;
 		}
 	}
-	/**Login using the Game Master credientals*/
-	private LinkedTreeMap<String, Object> login(){
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("vb_login_username", Base.Settings.GAMEMASTERNAME);
-		params.put("vb_login_password", Base.Settings.GAMEMASTERPASS);
-		return callMethod("login_login", params, true);
-	}
-	/**
-	 * Attempts to login no more than 3 times
-	 */
-	public void loginAttempt(){
-		String errorMsg = "";
-		for(int i = 0;i < 3;i++){
-			errorMsg = parseResponse(login());if(errorMsg == null){errorMsg = "";}
-			if(errorMsg.equals("redirect_login")){//if login is succesful
-				Base.Console.config("SC2Mafia Forum API logged in.");
-				setConnected(true);
-				break;
-			}
-		}
-		if(!errorMsg.equals("redirect_login")){//login failed
-			Base.Console.warning("SC2Mafia Forum API unable to login! Registration is disabled. Reason: '"+errorMsg+"'");
-			setConnected(false);
-		}
-
-
-	}
-	/**Attempts to post a new reply in said Thread
-	 * @param threadid
-	 * @param message
-	 * @return true on success
-	 */
-	public boolean newPost(String threadid,String message){
-		String errorMsg;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("threadid", threadid);
-		params.put("message", message);
-		params.put("signature", "1");
-		errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
-		if(errorMsg != null){
-			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
-				return true;
-			}
-			else if(errorMsg.equals("nopermission_loggedout")){
-				loginAttempt();
-				if(getConnected()){
-					return newPost(threadid, message);
-				}
-			}
-			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
-				return newPost(threadid, message);
-			}
-		}
-		Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
-		return false;
-	}
-	/**Attempts to post a new Thread in the forum, returns the posted Thread id for later use.
-	 * Returns two numbers seperated by a space on success.'(threadid) (postid)'
-	 * @param forumid
-	 * @param subject
-	 * @param message
-	 * @return int(int String) on success, errormsg otherwise
-	 */
-	public String newThread(String forumid,String subject,String message){
-		String errorMsg;
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("forumid", forumid);
-		params.put("subject", subject);
-		params.put("message", message);
-		params.put("signature", "1");
-		errorMsg = parseResponse(callMethod("newthread_postthread", params, true));
-		if(errorMsg != null){
-			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
-				return errorMsg;
-			}
-			else if(errorMsg.equals("nopermission_loggedout")){
-				loginAttempt();
-				if(getConnected()){
-					return newThread(forumid, subject, message);
-				}
-				return errorMsg;
-			}
-			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
-				return newThread(forumid, subject, message);
-			}
-			else{
-				Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
-				return errorMsg;
-			}
-		}
-		Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
-		return errorMsg;
-	}
 	/**Parses response, designed specifically for gathering the list of all messages. Messages only have the header at this point, the actual message is not included
 	 * @param response
 	 * @return ArrayList<Message>
 	 */
 	@SuppressWarnings("rawtypes")
-	public ArrayList<Message> parseMessages(LinkedTreeMap<String, Object> response){
+	private ArrayList<Message> parseMessages(LinkedTreeMap<String, Object> response){
 		ArrayList<Message> messages = new ArrayList<Message>();
 		if(response != null){
 			if(response.containsKey("response")){
@@ -470,7 +376,7 @@ public class SC2MafiaAPI extends Thread{
 	 * @return the 'errormessage' inside, if none: null
 	 */
 	@SuppressWarnings("rawtypes")
-	public String parseResponse(LinkedTreeMap<String, Object> response){
+	private String parseResponse(LinkedTreeMap<String, Object> response){
 		//LinkedTreeMap response = (LinkedTreeMap) response2;
 		String theReturn = null;
 		String className = null;
@@ -570,7 +476,7 @@ public class SC2MafiaAPI extends Thread{
 	 * @return HashMap<String, String>
 	 */
 	@SuppressWarnings("rawtypes")
-	public HashMap<String, String> parseViewMember(LinkedTreeMap<String, Object> response){
+	private HashMap<String, String> parseViewMember(LinkedTreeMap<String, Object> response){
 		HashMap<String, String> theReturn = new HashMap<String, String>();
 		theReturn.put("forumid", null);
 		theReturn.put("forumjoindate", null);
@@ -611,19 +517,40 @@ public class SC2MafiaAPI extends Thread{
 		}
 		return theReturn;
 	}
-	public void run(){
-		Properties props = System.getProperties();
+	/**Returns list of PMs in the inbox
+	 * @return
+	 */
+	public ArrayList<Message> pm_ListPMs(){
 		String errorMsg;
-		//handshake with the forum
-		if((errorMsg = parseResponse(init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),false))) == null){
-			Base.Console.config("SC2Mafia Forum API connected.");
-			//attempt to login
-			loginAttempt();
+		HashMap<String, String> params = new HashMap<String, String>();
+		LinkedTreeMap<String,Object> linkmap = callMethod("private_messagelist", params, true);
+		errorMsg = parseResponse(linkmap);
+		System.out.println("parsed the link map for errors");
+		if(errorMsg != null){
+			if(errorMsg.equals("totalmessages")){//is the inbox
+				System.out.println("contains totalmessages");
+				ArrayList<Message> msgList = parseMessages(linkmap);
+				System.out.println("parsed the link map for PM arrayList");
+				System.out.println("has "+msgList.size()+" message(s)");
+				for(Message msg:msgList){
+					System.out.println("About to go through list for");
+					msg.message = pm_ViewPM(msg.pmid);
+				}
+				System.out.println("done with for");
+				return msgList;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				forum_Login();
+				if(getConnected()){
+					return pm_ListPMs();
+				}
+			}
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need to check this
+				return pm_ListPMs();
+			}
 		}
-		else{
-			Base.Console.warning("SC2Mafia Forum API unable to connect! Registration is disabled. Reason: '"+errorMsg+"'");
-			setConnected(false);
-		}
+		Base.Console.warning("SC2Mafia Forum API unable view messages! Reason: '"+errorMsg+"'");
+		return null;
 	}
 	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
 	 * @param user
@@ -631,7 +558,7 @@ public class SC2MafiaAPI extends Thread{
 	 * @param message
 	 * @return
 	 */
-	public String sendMsg(String user,String title,String message){
+	public String pm_SendNew(String user,String title,String message){
 		String errorMsg;
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("title", title);
@@ -644,9 +571,9 @@ public class SC2MafiaAPI extends Thread{
 				return errorMsg;
 			}
 			else if(errorMsg.equals("nopermission_loggedout")){
-				loginAttempt();
+				forum_Login();
 				if(getConnected()){
-					return sendMsg(user, title, message);
+					return pm_SendNew(user, title, message);
 				}
 				return errorMsg;
 			}
@@ -657,6 +584,117 @@ public class SC2MafiaAPI extends Thread{
 		}
 		Base.Console.warning("SC2Mafia Forum API unable send message! Reason: '"+errorMsg+"'");
 		return errorMsg;
+	}
+	/**Grabs the message from the PM specified by the pmID
+	 * @param pmId
+	 * @return
+	 */
+	public String pm_ViewPM(String pmId){
+		return pm_ViewPM(pmId, 0);
+	}
+	/**Grabs the message from the PM specified by the pmID
+	 * @param pmId
+	 * @param loop increasing int to prevent inifinite loops
+	 * @return
+	 */
+	public String pm_ViewPM(String pmId, int loop){
+		String errorMsg = null;
+		if(pmId != null){
+			HashMap<String, String> params = new HashMap<String, String>();
+			params.put("pmid", pmId);
+			errorMsg = parseResponse(callMethod("private_showpm", params, true));
+			if(loop < 6){//no inifinite loop by user
+				if(errorMsg != null){
+					if(errorMsg.equals("nopermission_loggedout")){
+						forum_Login();
+						if(getConnected()){
+							return pm_ViewPM(pmId, loop++);
+						}
+					}
+					else if(errorMsg.equals("invalid_api_signature")){
+						return pm_ViewPM(pmId, loop++);
+					}
+				}
+			}
+		}
+		return errorMsg;
+	}
+	/**Attempts to edit a post based on the post id
+	 * @param postid
+	 * @param message
+	 * @return true on successs
+	 */
+	public boolean post_Edit(String postid,String message){
+		String errorMsg;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("postid", postid);
+		params.put("message", message);
+		params.put("signature", "1");
+		errorMsg = parseResponse(callMethod("editpost_updatepost", params, true));
+		boolean theReturn = false;
+		if(errorMsg != null){
+			if(errorMsg.equals("redirect_editthanks")){//success
+				return true;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				forum_Login();
+				if(getConnected()){
+					return post_Edit(postid, message);
+				}
+				theReturn = false;
+			}
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+				return post_Edit(postid, message);
+			}
+			else{
+				theReturn = false;
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable edit post! Reason: '"+errorMsg+"'");
+		return theReturn;
+	}
+	/**Attempts to post a new reply in said Thread
+	 * @param threadid
+	 * @param message
+	 * @return true on success
+	 */
+	public boolean post_New(String threadid,String message){
+		String errorMsg;
+		HashMap<String, String> params = new HashMap<String, String>();
+		params.put("threadid", threadid);
+		params.put("message", message);
+		params.put("signature", "1");
+		errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
+		if(errorMsg != null){
+			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
+				return true;
+			}
+			else if(errorMsg.equals("nopermission_loggedout")){
+				forum_Login();
+				if(getConnected()){
+					return post_New(threadid, message);
+				}
+			}
+			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+				return post_New(threadid, message);
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
+		return false;
+	}
+	public void run(){
+		Properties props = System.getProperties();
+		String errorMsg;
+		//handshake with the forum
+		if((errorMsg = parseResponse(init(clientname, clientversion, props.getProperty("os.name"),props.getProperty("os.version"),Integer.toString(props.hashCode()),false))) == null){
+			Base.Console.config("SC2Mafia Forum API connected.");
+			//attempt to login
+			forum_Login();
+		}
+		else{
+			Base.Console.warning("SC2Mafia Forum API unable to connect! Registration is disabled. Reason: '"+errorMsg+"'");
+			setConnected(false);
+		}
 	}
 	/**
 	 * Sets the API access token. You shouldn't need to use this if you use the
@@ -712,82 +750,44 @@ public class SC2MafiaAPI extends Thread{
 	private void setSecret(String secret) {
 		this.secret = secret;
 	}
-	/**Grabs all data with this username - must be parsed with parseViewMember*/
-	public LinkedTreeMap<String, Object> viewMember(String user){
-		HashMap<String, String> params = new HashMap<String, String>();
-		params.put("username", user);
-		return callMethod("member", params, true);
-	}
-	/**Grabs the message from the PM specified by the pmID
-	 * @param pmId
-	 * @return
-	 */
-	public String viewPMmessage(String pmId){
-		return viewPMmessage(pmId, 0);
-	}
-	/**Grabs the message from the PM specified by the pmID
-	 * @param pmId
-	 * @param loop increasing int to prevent inifinite loops
-	 * @return
-	 */
-	public String viewPMmessage(String pmId, int loop){
-		String errorMsg = null;
-		if(pmId != null){
-			HashMap<String, String> params = new HashMap<String, String>();
-			params.put("pmid", pmId);
-			errorMsg = parseResponse(callMethod("private_showpm", params, true));
-			if(loop < 6){//no inifinite loop by user
-				if(errorMsg != null){
-					if(errorMsg.equals("nopermission_loggedout")){
-						loginAttempt();
-						if(getConnected()){
-							return viewPMmessage(pmId, loop++);
-						}
-					}
-					else if(errorMsg.equals("invalid_api_signature")){
-						return viewPMmessage(pmId, loop++);
-					}
-				}
-			}
-		}
-		return errorMsg;
-	}
 
 
-	/**Returns list of PMs in the inbox
-	 * @return
+	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
+	 * Returns two numbers seperated by a space on success.'(threadid) (postid)'
+	 * @param forumid
+	 * @param subject
+	 * @param message
+	 * @return int(int String) on success, errormsg otherwise
 	 */
-	public ArrayList<Message> viewPMs(){
+	public String thread_New(String forumid,String subject,String message){
 		String errorMsg;
 		HashMap<String, String> params = new HashMap<String, String>();
-		LinkedTreeMap<String,Object> linkmap = callMethod("private_messagelist", params, true);
-		errorMsg = parseResponse(linkmap);
-		System.out.println("parsed the link map for errors");
+		params.put("forumid", forumid);
+		params.put("subject", subject);
+		params.put("message", message);
+		params.put("signature", "1");
+		errorMsg = parseResponse(callMethod("newthread_postthread", params, true));
 		if(errorMsg != null){
-			if(errorMsg.equals("totalmessages")){//is the inbox
-				System.out.println("contains totalmessages");
-				ArrayList<Message> msgList = parseMessages(linkmap);
-				System.out.println("parsed the link map for PM arrayList");
-				System.out.println("has "+msgList.size()+" message(s)");
-				for(Message msg:msgList){
-					System.out.println("About to go through list for");
-					msg.message = viewPMmessage(msg.pmid);
-				}
-				System.out.println("done with for");
-				return msgList;
+			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
+				return errorMsg;
 			}
 			else if(errorMsg.equals("nopermission_loggedout")){
-				loginAttempt();
+				forum_Login();
 				if(getConnected()){
-					return viewPMs();
+					return thread_New(forumid, subject, message);
 				}
+				return errorMsg;
 			}
 			else if(errorMsg.equals("invalid_api_signature")){//XXX need to check this
-				return viewPMs();
+				return thread_New(forumid, subject, message);
+			}
+			else{
+				Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
+				return errorMsg;
 			}
 		}
-		Base.Console.warning("SC2Mafia Forum API unable view messages! Reason: '"+errorMsg+"'");
-		return null;
+		Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
+		return errorMsg;
 	}
 
 }

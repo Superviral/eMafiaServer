@@ -186,7 +186,7 @@ public class LobbyCmd {
 	public static void _editpost(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting edit post");
-		boolean postMsg = c.Game.Base.ForumAPI.editPost("436224", phrase);
+		boolean postMsg = c.Game.Base.ForumAPI.post_Edit("436224", phrase);
 		if(postMsg){
 			c.Game.Base.Console.debug("Edit Reply successful...");
 		}
@@ -198,7 +198,7 @@ public class LobbyCmd {
 	public static void _newthread(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting new thread");
-		String threadMsg = c.Game.Base.ForumAPI.newThread("292", "This is just a test, do not panic", phrase);
+		String threadMsg = c.Game.Base.ForumAPI.thread_New("292", "This is just a test, do not panic", phrase);
 		if(StringFunctions.isInteger(threadMsg.substring(0, 1))){
 			if(threadMsg.contains(" ")){
 				String[] ids = threadMsg.split(" ");
@@ -218,7 +218,7 @@ public class LobbyCmd {
 	public static void _newpost(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting new post");
-		boolean postMsg = c.Game.Base.ForumAPI.newPost("26877", phrase);
+		boolean postMsg = c.Game.Base.ForumAPI.post_New("26877", phrase);
 		if(postMsg){
 			c.Game.Base.Console.debug("New Reply successful...");
 		}
@@ -230,7 +230,7 @@ public class LobbyCmd {
 	public static void _viewpms(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting to view pms");
-		ArrayList<Message> PMlist = c.Game.Base.ForumAPI.viewPMs();
+		ArrayList<Message> PMlist = c.Game.Base.ForumAPI.pm_ListPMs();
 		if(PMlist != null){
 			c.Game.Base.Console.debug("view successful... there are "+PMlist.size()+" messages.");
 		}
@@ -242,7 +242,7 @@ public class LobbyCmd {
 	public static void _viewpm(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting to view pm 150700");
-		String PmMsg = c.Game.Base.ForumAPI.viewPMmessage("150700");
+		String PmMsg = c.Game.Base.ForumAPI.pm_ViewPM("150700");
 		if(PmMsg != null){
 			c.Game.Base.Console.debug("view successful...:"+PmMsg);
 		}

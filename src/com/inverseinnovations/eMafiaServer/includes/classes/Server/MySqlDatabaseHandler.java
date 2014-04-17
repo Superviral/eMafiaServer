@@ -540,7 +540,7 @@ public class MySqlDatabaseHandler extends Thread{
 		Long reg_time = System.currentTimeMillis()/1000;
 		//TODO SPAM: need to setup the said web service
 		if(retry == false){
-			errorMsg = Base.ForumAPI.sendMsg(username,"eMafia Account Verification",
+			errorMsg = Base.ForumAPI.pm_SendNew(username,"eMafia Account Verification",
 					"[table][tr][td]Welcome to [B][COLOR=#DAA520]e[/COLOR]Mafia[/B], "+username+"![/td][/tr]" +
 					"[tr][td][/td][/tr][tr][td] Your account has been created, but still needs verification within 24 hours. Below is your verification code:[/td][/tr]" +
 					"[tr][td][CENTER][COLOR=WHITE][SIZE=6][B]"+token+"[/B][/SIZE][/COLOR][/CENTER][/td][/tr]" +
@@ -648,7 +648,7 @@ public class MySqlDatabaseHandler extends Thread{
 			st.setString(1, username);
 			rs = st.executeQuery();
 			if(rs.next()){ // If match.
-				HashMap<String,String> forumData = Base.ForumAPI.parseViewMember(Base.ForumAPI.viewMember(username));
+				HashMap<String,String> forumData =Base.ForumAPI.forum_ViewMember(username);
 				if(forumData.containsKey("username")){
 					if(forumData.get("username").length() < 2){forumData.put("username", username);}
 					st = con.prepareStatement("UPDATE user_account SET forumid=?, forumjoindate=?, avatarurl=?, username=? WHERE username=?");
