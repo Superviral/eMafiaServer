@@ -184,10 +184,8 @@ public class LobbyCmd {
 		}
 	}
 	public static void _editpost(Character c, String phrase, byte[] data) {
-		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
-		c.Game.Base.Console.debug("Attempting send pm");
-		String theReturn = c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "You asked for it, you got.<br>Well...not much to say, I'm a bot after all.");
-		c.Game.Base.Console.debug("Attempting send pm");
+		// works -> c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "this is just a test..."); can't use a '
+		c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "You asked for it, you got. <br> Well...not much to say, Im a after all.");
 		return;
 	}
 	public static void _newthread(Character c, String phrase, byte[] data) {

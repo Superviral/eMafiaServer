@@ -8,6 +8,8 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.UnsupportedEncodingException;
+import java.text.CharacterIterator;
+import java.text.StringCharacterIterator;
 import java.util.Random;
 
 
@@ -201,6 +203,63 @@ public class StringFunctions {
 		}
 		return null;
 	}
+	public static String querySafeString(String aText){
+		final StringBuilder result = new StringBuilder();
+		if(aText != null){
+			final StringCharacterIterator iterator = new StringCharacterIterator(aText);
+			char character =  iterator.current();
+			while (character != CharacterIterator.DONE ){
+				if (character == '&') {
+					result.append("&amp;");
+				}
+				else if (character == '\"') {
+					result.append("&quot;");
+				}
+				else if (character == '\t') {
+					addCharEntity(9, result);
+				}
+				else if (character == '$') {
+					addCharEntity(36, result);
+				}
+				else if (character == '\'') {
+					addCharEntity(39, result);
+				}
+				else if (character == '+') {
+					addCharEntity(43, result);
+				}
+				else if (character == '=') {
+					addCharEntity(61, result);
+				}
+				else if (character == '@') {
+					addCharEntity(64, result);
+				}
+				else if (character == '\\') {
+					addCharEntity(92, result);
+				}
+				else {
+					//the char is not a special one
+					//add it to the result as is
+					result.append(character);
+				}
+				character = iterator.next();
+			}
+		}
+		return result.toString();
+	}
+	private static void addCharEntity(Integer aIdx, StringBuilder aBuilder){
+		String padding = "";
+		if( aIdx <= 9 ){
+		padding = "00";
+		}
+		else if( aIdx <= 99 ){
+		padding = "0";
+		}
+		else {
+		//no prefix
+		}
+		String number = padding + aIdx.toString();
+		aBuilder.append("&#" + number + ";");
+	}
 	/**
 	 * Return String with \n \r and \0 removed from front and back.
 	 */
@@ -255,7 +314,7 @@ public class StringFunctions {
 		catch(IOException e){e.printStackTrace();}
 		try{
 			if(in != null){
-			  in.close();
+			in.close();
 			}
 		}
 		catch(IOException e){e.printStackTrace();}
