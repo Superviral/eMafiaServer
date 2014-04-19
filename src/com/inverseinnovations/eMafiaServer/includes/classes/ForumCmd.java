@@ -14,6 +14,5 @@ public class ForumCmd {
 	public static void info(Game Game, String username, String phrase) {
 		System.out.println("doing info");
 		String theReturn = Game.Base.ForumAPI.pm_SendNew(username, "Info Request", "You asked for it, you got.<br>Well...not much to say, I'm a bot after all.");
-		System.out.println("returns "+theReturn);
 	}
 }

@@ -104,7 +104,6 @@ public class SC2MafiaAPI extends Thread{
 			for (String key : keys) {// ' " \ are unsafe
 				//queryStringBuffer.append("&" + key + "=" + URLEncoder.encode(params.get(key), "UTF-8"));
 				String value = StringFunctions.querySafeString(params.get(key));
-				System.out.println(value);
 				queryStringBuffer.append("&" + key + "=" + URLEncoder.encode(value, "UTF-8"));
 			}
 			if (sign) {
@@ -396,7 +395,6 @@ public class SC2MafiaAPI extends Thread{
 				if(((LinkedTreeMap)response.get("response")).containsKey("errormessage")){
 					className = ((LinkedTreeMap)response.get("response")).get("errormessage").getClass().getName();
 					if(className.equals("java.lang.String")){
-						System.out.println("response->errormessage->java.lang.String");
 						theReturn = ((String) ((LinkedTreeMap)response.get("response")).get("errormessage"));
 						if(theReturn.equals("redirect_postthanks")){//this is for newthread and newpost
 							if(response.containsKey("show")){
@@ -528,6 +526,43 @@ public class SC2MafiaAPI extends Thread{
 		System.out.println(response.toString());
 		return theReturn;
 	}
+	/**Attempts to empty the Game Master's PM Inbox
+	 * @return "pm_messagesdeleted" on success
+	 */
+	public String pm_EmptyInbox(){
+		return  pm_EmptyInbox(0);
+	}
+	/**Attempts to empty the Game Master's PM Inbox
+	 * @return "pm_messagesdeleted" on success
+	 */
+	private String pm_EmptyInbox(int loop){
+		String errorMsg = null;
+		loop++;
+		HashMap<String, String> params = new HashMap<String, String>();//150885
+		//params.put("forumid", forumid);
+		params.put("dateline", "1397873956");
+		params.put("folderid", "0");
+		errorMsg = parseResponse(callMethod("private_confirmemptyfolder", params, true));
+		if(loop < 5){//no inifinite loop by user
+			if(errorMsg != null){
+				if(errorMsg.equals("pm_messagesdeleted")){//success
+					return errorMsg;
+				}
+				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+					forum_Login();
+					if(getConnected()){
+						return pm_EmptyInbox(loop);
+					}
+					return errorMsg;
+				}
+				else if(errorMsg.equals("invalid_api_signature")){
+					return pm_EmptyInbox(loop);
+				}
+			}
+		}
+		Base.Console.warning("SC2Mafia Forum API unable empty PM Inbox! Reason: '"+errorMsg+"'");
+		return errorMsg;
+	}
 	/**Returns list of PMs in the inbox
 	 * @return
 	 */
@@ -558,7 +593,7 @@ public class SC2MafiaAPI extends Thread{
 						return pm_ListPMs(loop);
 					}
 				}
-				else if(errorMsg.equals("invalid_api_signature")){//XXX need to check this
+				else if(errorMsg.equals("invalid_api_signature")){
 					return pm_ListPMs(loop);
 				}
 			}
@@ -570,7 +605,7 @@ public class SC2MafiaAPI extends Thread{
 	 * @param user
 	 * @param title subject
 	 * @param message
-	 * @return
+	 * @return "pm_messagesent" on success
 	 */
 	public String pm_SendNew(String user,String title,String message){
 		return pm_SendNew( user, title, message, 0);
@@ -579,7 +614,7 @@ public class SC2MafiaAPI extends Thread{
 	 * @param user
 	 * @param title subject
 	 * @param message
-	 * @return
+	 * @return "pm_messagesent" on success
 	 */
 	private String pm_SendNew(String user,String title,String message, int loop){
 		loop++;
@@ -597,8 +632,6 @@ public class SC2MafiaAPI extends Thread{
 				}
 				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")||errorMsg.equals("invalid_api_signature")){
 					forum_Login();
-					//runDirect();
-					//this.start();
 					if(getConnected()){
 						return pm_SendNew(user, title, message,loop);
 					}
@@ -614,7 +647,7 @@ public class SC2MafiaAPI extends Thread{
 	}
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
-	 * @return
+	 * @return message text as String
 	 */
 	public String pm_ViewPM(String pmId){
 		return pm_ViewPM(pmId, 0);
@@ -622,7 +655,7 @@ public class SC2MafiaAPI extends Thread{
 	/**Grabs the message from the PM specified by the pmID
 	 * @param pmId
 	 * @param loop increasing int to prevent inifinite loops
-	 * @return
+	 * @return message text as String
 	 */
 	private String pm_ViewPM(String pmId, int loop){
 		String errorMsg = null;
@@ -681,7 +714,7 @@ public class SC2MafiaAPI extends Thread{
 					}
 					theReturn = false;
 				}
-				else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
+				else if(errorMsg.equals("invalid_api_signature")){
 					return post_Edit(postid, message, loop);
 				}
 				else{
@@ -698,24 +731,35 @@ public class SC2MafiaAPI extends Thread{
 	 * @return true on success
 	 */
 	public boolean post_New(String threadid,String message){
+		return post_New(threadid, message, 0);
+	}
+	/**Attempts to post a new reply in said Thread
+	 * @param threadid
+	 * @param message
+	 * @return true on success
+	 */
+	private boolean post_New(String threadid,String message, int loop){
+		loop++;
 		String errorMsg;
 		HashMap<String, String> params = new HashMap<String, String>();
 		params.put("threadid", threadid);
 		params.put("message", message);
 		params.put("signature", "1");
 		errorMsg = parseResponse(callMethod("newreply_postreply", params, true));
-		if(errorMsg != null){
-			if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
-				return true;
-			}
-			else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
-				forum_Login();
-				if(getConnected()){
-					return post_New(threadid, message);
+		if(loop < 5){
+			if(errorMsg != null){
+				if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
+					return true;
 				}
-			}
-			else if(errorMsg.equals("invalid_api_signature")){//XXX need ot check this
-				return post_New(threadid, message);
+				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
+					forum_Login();
+					if(getConnected()){
+						return post_New(threadid, message, loop);
+					}
+				}
+				else if(errorMsg.equals("invalid_api_signature")){
+					return post_New(threadid, message, loop);
+				}
 			}
 		}
 		Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
@@ -839,5 +883,4 @@ public class SC2MafiaAPI extends Thread{
 		Base.Console.warning("SC2Mafia Forum API unable submit Thread! Reason: '"+errorMsg+"'");
 		return errorMsg;
 	}
-
 }
