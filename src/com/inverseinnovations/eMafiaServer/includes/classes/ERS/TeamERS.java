@@ -3,7 +3,6 @@ GNU GENERAL PUBLIC LICENSE V3
 Copyright (C) 2013  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes.ERS;
 
-import com.inverseinnovations.eMafiaServer.includes.CmdCompile;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Team;
 
 public class TeamERS{
@@ -18,11 +17,12 @@ public class TeamERS{
 		addTeammate(player.getPlayerNum());
 	}
 	public RoleERS[] getAliveTeammates(){
-		Integer[] players = ((Integer[]) team.getAliveTeammates().toArray());
-		RoleERS[] theReturn = new RoleERS[players.length];
-		for(int i = 0; i < players.length; i++){
-			if(team.getMatch().getPlayerRole(players[i]) != null){
-				theReturn[i] = team.getMatch().getPlayerRole(players[i]).getERSClass();
+		RoleERS[] theReturn = new RoleERS[team.getAliveTeammates().size()];
+		int loop = 0;
+		for(Integer i:team.getAliveTeammates()){
+			if(team.getMatch().getPlayerRole(i) != null){
+				theReturn[loop] = team.getMatch().getPlayerRole(i).getERSClass();
+				loop++;
 			}
 		}
 		return theReturn;
@@ -37,11 +37,12 @@ public class TeamERS{
 		return team.getScript(eventCall);
 	}
 	public RoleERS[] getTeammates(){
-		Integer[] players = ((Integer[]) team.getTeammates().toArray());
-		RoleERS[] theReturn = new RoleERS[players.length];
-		for(int i = 0; i < players.length; i++){
-			if(team.getMatch().getPlayerRole(players[i]) != null){
-				theReturn[i] = team.getMatch().getPlayerRole(players[i]).getERSClass();
+		RoleERS[] theReturn = new RoleERS[team.getTeammates().size()];
+		int loop = 0;
+		for(Integer i:team.getTeammates()){
+			if(team.getMatch().getPlayerRole(i) != null){
+				theReturn[loop] = team.getMatch().getPlayerRole(i).getERSClass();
+				loop++;
 			}
 		}
 		return theReturn;
@@ -111,8 +112,7 @@ public class TeamERS{
 	}
 	public void text(String msg){
 		for(int playerNum: team.getTeammates()){
-			team.getMatch().sendToPlayerNum(playerNum, msg);
+			team.getMatch().sendToPlayerNum(playerNum, msg);//XXX need to send to chatChannel instead
 		}
-		team.getMatch().send(CmdCompile.chatScreen(msg));
 	}
 }

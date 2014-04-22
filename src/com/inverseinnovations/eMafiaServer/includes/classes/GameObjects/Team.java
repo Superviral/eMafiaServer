@@ -126,10 +126,9 @@ public class Team extends GameObject{
 	 */
 	public boolean isRoleExist(int roleId){
 		boolean theReturn = false;
-		Integer[] players = ((Integer[]) getTeammates().toArray());
-		for(int i = 0; i < players.length; i++){
-			if(match.getPlayerRole(players[i]) != null){
-				if(match.getPlayerRole(players[i]).getEID() == roleId){
+		for(Integer i:getTeammates()){
+			if(match.getPlayerRole(i) != null){
+				if(match.getPlayerRole(i).getEID() == roleId){
 					theReturn = true;
 					break;
 				}
@@ -143,9 +142,8 @@ public class Team extends GameObject{
 	 */
 	public int numRoleAlive(int roleId){
 		int theReturn = 0;
-		Integer[] players = ((Integer[]) getTeammates().toArray());
-		for(int i = 0; i < players.length; i++){
-			Role role = match.getPlayerRole(players[i]);
+		for(Integer i:getTeammates()){
+			Role role = match.getPlayerRole(i);
 			if(role != null){
 				if(role.getEID() == roleId){
 					if(role.isAlive()){
@@ -162,9 +160,8 @@ public class Team extends GameObject{
 	 */
 	public boolean isRoleAlive(int roleId){
 		boolean theReturn = false;
-		Integer[] players = ((Integer[]) getTeammates().toArray());
-		for(int i = 0; i < players.length; i++){
-			Role role = match.getPlayerRole(players[i]);
+		for(Integer i:getTeammates()){
+			Role role = match.getPlayerRole(i);
 			if(role != null){
 				if(role.getEID() == roleId){
 					if(role.isAlive()){

@@ -66,14 +66,40 @@ public class scriptProcess {
 				//Boolean result = task.get(15, TimeUnit.SECONDS);
 				task.get(15, TimeUnit.SECONDS);
 				if(scriptDebugging){match.Game.Base.Console.debug("Script finished with completely");}
-			}
-			catch (ExecutionException e) {
+			}/*
+			catch( Throwable t ){
+				if( t instanceof ExecutionException ) {
+		            t = t.getCause();
+		        }
+				if( t instanceof WrappedException) {
+					WrappedException e = (WrappedException) t;
+					String msg = "Script "+e.getClass().getName()+" from "+scriptName+"...: "+e.getMessage();e.g
+					match.Game.Base.Console.warning(msg);
+					e.printStackTrace();//Don't want this spamming the Console
+					match.Game.Base.Console.warning("Caused by "+e.getCause().getClass().getName());
+		            throw (RuntimeException)t;
+		        }
+			}*/
+			/*catch (WrappedException e) {
 				//String theScriptor = "Unknown";
-				String msg = "Script RuntimeException from "+scriptName+"...: "+e.getMessage();
+				String msg = "Script "+e.getClass().getName()+" from "+scriptName+"...: "+e.getMessage();
 				match.Game.Base.Console.warning(msg);
+				match.Game.Base.Console.warning(".... on line "+e.lineNumber()+": "+e.lineSource());
 				match.send(CmdCompile.genericPopup(msg));
 				//TODO need to 'wrap' msg to fit window
 				e.printStackTrace();//Don't want this spamming the Console
+			}*/
+			catch (ExecutionException t) {
+				if( t.getCause() instanceof WrappedException) {
+					WrappedException e = (WrappedException) t.getCause();
+					String msg = "Script "+e.getClass().getName()+" from "+scriptName+"...: "+e.getMessage();
+					match.Game.Base.Console.warning(msg);
+					match.Game.Base.Console.warning(".... on line "+e.lineNumber()+": "+e.lineSource());
+					match.Game.Base.Console.warning(string);
+					match.send(CmdCompile.genericPopup(msg));
+					//TODO need to 'wrap' msg to fit window
+					e.printStackTrace();//Don't want this spamming the Console
+				}
 			}
 			catch (TimeoutException e) {
 				match.Game.Base.Console.warning("Script timeout...");
