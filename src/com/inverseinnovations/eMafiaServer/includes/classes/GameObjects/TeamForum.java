@@ -1,6 +1,6 @@
-/* eMafiaServer - Team.java
+/* eMafiaServer - TeamForum.java
 GNU GENERAL PUBLIC LICENSE V3
-Copyright (C) 2012  Matthew 'Apocist' Davis */
+Copyright (C) 2014  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes.GameObjects;
 
 import java.util.ArrayList;
@@ -10,11 +10,11 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 import com.inverseinnovations.eMafiaServer.includes.Constants;
-import com.inverseinnovations.eMafiaServer.includes.classes.ERS.TeamERS;
+import com.inverseinnovations.eMafiaServer.includes.classes.ERS.TeamForumERS;
 
-public class Team extends GameObject{
-	private Match match;
-	private TeamERS teamERS = null;;
+public class TeamForum extends GameObject{
+	private MatchForum match;
+	private TeamForumERS teamERS = null;;
 	private boolean victory;
 	private boolean mayGameEnd;
 	private Map<String, String> ersScript = new LinkedHashMap<String, String>();
@@ -29,14 +29,14 @@ public class Team extends GameObject{
 	 * @param match Match reference
 	 * @param name name of Team to make
 	 */
-	public Team(final Match match,String name){
+	public TeamForum(final MatchForum match,String name){
 		super(0, name, Constants.TYPE_GAMEOB_TEAM);
 		if(this.match == null){this.match = match;}
 	}
 	/**
 	 * Returns the Match reference
 	 */
-	public Match getMatch(){
+	public MatchForum getMatch(){
 		return this.match;
 	}
 	/**Returns the requested script for the specified event. Returns null if no existing event or script.
@@ -134,7 +134,7 @@ public class Team extends GameObject{
 	public int numRoleAlive(int roleId){
 		int theReturn = 0;
 		for(Integer i:getTeammates()){
-			Role role = match.getPlayerRole(i);
+			RoleForum role = match.getPlayerRole(i);
 			if(role != null){
 				if(role.getEID() == roleId){
 					if(role.isAlive()){
@@ -152,7 +152,7 @@ public class Team extends GameObject{
 	public boolean isRoleAlive(int roleId){
 		boolean theReturn = false;
 		for(Integer i:getTeammates()){
-			Role role = match.getPlayerRole(i);
+			RoleForum role = match.getPlayerRole(i);
 			if(role != null){
 				if(role.getEID() == roleId){
 					if(role.isAlive()){
@@ -287,9 +287,9 @@ public class Team extends GameObject{
 	/**
 	 * Returns the ERSClass for scripting purposes
 	 */
- 	public TeamERS getERSClass(){
+ 	public TeamForumERS getERSClass(){
 		if(this.teamERS == null){
-			this.teamERS = new TeamERS(this);
+			this.teamERS = new TeamForumERS(this);
 		}
 		return this.teamERS;
 	}

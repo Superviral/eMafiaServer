@@ -12,6 +12,7 @@ import com.inverseinnovations.eMafiaServer.includes.StringFunctions;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Lobby;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Match;
+import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Role;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.SocketClient;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.SC2MafiaAPI.Message;
@@ -29,7 +30,7 @@ public class LobbyCmd {
 		//admin commands
 		//"_show_commands","_shutdown","timer_add","_setupbots","_makenpc","_force"
 		//experimental commands
-		"test","var_dump","_editpost","_newthread","_newpost","_parsepms","_emptyinbox"
+		"test","var_dump","_editpost","_newthread","_newpost","_parsepms","_emptyinbox","_forumsignup"
 	};
 	public static void charaupdate(Character c, String phrase, byte[] data) {
 		String[] ephrase = phrase.split(" ");
@@ -40,6 +41,45 @@ public class LobbyCmd {
 				Character chara = c.Game.getCharacter(Integer.parseInt(charaString));
 				if(chara != null){
 					c.send(CmdCompile.charaUpdate(chara));
+				}
+			}
+		}
+	}
+	public static void _forumsignup(Character c, String phrase, byte[] data) {
+		c.Game.Base.Console.debug("_forumsignup hit..");
+		String[] ephrase = phrase.split(" ");
+		Match match;
+		if(ephrase.length > 0){
+			if(ephrase[0].equals("list")){
+				c.send(CmdCompile.refreshMList(c.Game.getMatchs()));
+			}
+			else if(ephrase[0].equals("join") && ephrase.length > 1){
+				match = c.Game.getMatch(Integer.parseInt(ephrase[1]));
+				if(match != null){
+					if(c.joinMatch(match)){//attempt to join + check character joined
+						c.send(CmdCompile.closeLayer("lobby"));//remove lobby layer
+						c.send(CmdCompile.enterMatch());//open matchSetup,client will call look
+					}
+					else{
+						c.send(CmdCompile.chatScreen("Match "+ephrase[1]+" is full."));
+					}
+				}
+				else{
+					c.send(CmdCompile.chatScreen("That match doesn't even exist!"));
+				}
+			}
+			else if(ephrase[0].equals("create")){
+				c.Game.Base.Console.debug("_forumsignup create hit..");
+				if(c.Game.getMatchSignup() == null){
+					c.Game.setMatchSignup(new MatchForum(c.Game, "A Test Match 1"));
+					c.Game.getMatchSignup().setHost(3359);//apo
+						c.Game.getMatchSignup().addToRoleSetup(7);//GF
+						c.Game.getMatchSignup().addToRoleSetup(4);//mafiaso
+						c.Game.getMatchSignup().addToRoleSetup(2);//sheriff
+						c.Game.getMatchSignup().addToRoleSetup(3);//doc
+						c.Game.getMatchSignup().addToRoleSetup(1);//cit
+						c.Game.getMatchSignup().addToRoleSetup(1);//cit
+					c.Game.getMatchSignup().postMatch();
 				}
 			}
 		}
@@ -211,9 +251,9 @@ public class LobbyCmd {
 	public static void _newpost(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting new post");
-		boolean postMsg = c.Game.Base.ForumAPI.post_New("26877", phrase);
-		if(postMsg){
-			c.Game.Base.Console.debug("New Reply successful...");
+		String postMsg = c.Game.Base.ForumAPI.post_New("26877", phrase);
+		if(StringFunctions.isInteger(postMsg)){
+			c.Game.Base.Console.debug("New Reply successful...Post id is "+postMsg);
 		}
 		else{
 			c.Game.Base.Console.debug("New Reply failed... : "+postMsg);

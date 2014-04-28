@@ -4,8 +4,12 @@ Copyright (C) 2012  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes;
 
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.mozilla.javascript.ContextFactory;
 
@@ -27,6 +31,10 @@ public class Game {
 	private Map<Integer, Lobby> lobbys = new HashMap<Integer, Lobby>();
 	private Map<Integer, Match> matches = new HashMap<Integer, Match>();
 	private HashMap<Integer, Usergroup> usergroups = new HashMap<Integer, Usergroup>();
+	private Timer ticker;
+	private TickTask tickTask;
+	private MatchForum matchOngoing = null;
+	private MatchForum matchSignup = null;
 
 	/**
 	 * Prepares main Game handler
@@ -35,6 +43,22 @@ public class Game {
 		this.Base = base;
 		this.start_time = System.nanoTime();
 		ContextFactory.initGlobal(new SandboxContextFactory());
+
+		//scheduleTicker();
+		//tickTask.doTask();//do without schedule
+	}
+	/**
+	 * Sets the Timer to the next hour
+	 */
+	public void scheduleTicker(){
+		if(this.tickTask == null){
+			this.tickTask = new TickTask(this);
+		}
+		if(this.tickTask == null){
+			this.ticker = new Timer();
+		}
+		ticker.cancel();
+		ticker.schedule(tickTask,nextHour());
 	}
 	/**
 	 * Assigns a Usergroup to Game(),
@@ -106,6 +130,30 @@ public class Game {
 	public Map<Integer, Match> getMatchs(){
 		return this.matches;
 	}
+	/**Returns the current Forum Match, if there is one
+	 * @return null is none
+	 */
+	public MatchForum getMatchOngoing(){
+		return matchOngoing;
+	}
+	/**Assigns a game as the current Forum Match
+	 * @param match
+	 */
+	public void setMatchOngoing(MatchForum match){
+		this.matchOngoing = match;
+	}
+	/**Returns the current Forum Signups, if there is one
+	 * @return null is none
+	 */
+	public MatchForum getMatchSignup(){
+		return matchSignup;
+	}
+	/**Assigns a game as the current Forum Signups
+	 * @param match
+	 */
+	public void setMatchSignup(MatchForum match){
+		this.matchSignup = match;
+	}
 	/**
 	 * Assigns a Character to the Game()
 	 */
@@ -139,5 +187,35 @@ public class Game {
 	 */
 	public SocketClient getConnection(int id){
 		return Base.Server.getClient(id);
+	}
+	/**
+	 * Returns a Date of the very next hour
+	 * @return
+	 */
+	private Date nextHour(){
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.add(Calendar.HOUR, 1);
+		return cal.getTime();
+    }
+	/**
+	 * Timer Ticker for executing hourly tasks
+	 */
+	private class TickTask extends TimerTask {
+		Game Game;
+
+		public TickTask(Game game){
+			this.Game = game;
+		}
+		@Override
+		public void run() {
+			doTask();
+			Game.scheduleTicker();
+		}
+		public void doTask(){
+			//Do everything here!
+	    }
+
 	}
 }

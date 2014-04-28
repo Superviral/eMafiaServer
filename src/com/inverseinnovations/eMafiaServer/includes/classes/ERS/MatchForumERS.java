@@ -1,17 +1,18 @@
-/* eMafiaServer - MatchERS.java
+/* eMafiaServer - MatchForumERS.java
 GNU GENERAL PUBLIC LICENSE V3
-Copyright (C) 2013  Matthew 'Apocist' Davis */
+Copyright (C) 2014  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes.ERS;
 
 import java.util.Random;
 
 import com.inverseinnovations.eMafiaServer.includes.CmdCompile;
-import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Match;
-import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Match.Players;
+import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum;
+import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum.Players;
+import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Team;
 
-public class MatchERS{
-	private Match match;
-	public MatchERS(final Match match){
+public class MatchForumERS{
+	private MatchForum match;
+	public MatchForumERS(final MatchForum match){
 		if(this.match == null){this.match = match;}
 	}
 	public void changePlayerRole(int playerNum, int newRoleId){
@@ -21,20 +22,20 @@ public class MatchERS{
 		//[CHAT_ADDPLAYER]mafiachat,<PLAYER_NUMBER>,0,1[/CHAT_ADDPLAYER]
 		//[CHAT_ADDPLAYER]channelname,playerNum,talkPrive,ListenPriv[/CHAT_ADDPLAYER] will overwrite previous istances, so is considered and edit too
 		//Privs : 0 = none, 1 = normal, 2 = anony
-		match.chatController().addPlayerToChannel(playerNum, channelname, talkPrive, listenPriv);
+		//match.chatController().addPlayerToChannel(playerNum, channelname, talkPrive, listenPriv);
 	}
 	public void chatCreate(String channelName, int timePhase){//[CHAT_CREATE](channelName),(timePhase)[/CHAT_CREATE]
 		//[CHAT_CREATE]mafiachat,1[/CHAT_CREATE] creates a channel if one doesnt exist
 		//[CHAT_CREATE]channelname,0-2[/CHAT_CREATE] 0-2 is the phase they may talk during. 0 = day, 1= night 2 = anytime
-		match.chatController().addChannel(channelName, timePhase);
+		//match.chatController().addChannel(channelName, timePhase);
 	}
 	public void chatRemovePlayer(String channelname,int playerNum){//[CHAT_REMOVEPLAYER]mafiachat,<PLAYER_NUMBER>[/CHAT_REMOVEPLAYER] removes the playerNum from the Channel if either exist
 		//[CHAT_REMOVEPLAYER]channelname,playerNum[/CHAT_REMOVEPLAYER]
-		match.chatController().addChannel(channelname, playerNum);
+		//match.chatController().addChannel(channelname, playerNum);
 	}
-	public RoleERS[] getAlivePlayers(){//Returns int[] array of all alive player numbers
+	public RoleForumERS[] getAlivePlayers(){//Returns int[] array of all alive player numbers
 		Players[] players = (Players[])match.getAliveList().toArray();
-		RoleERS[] theReturn = new RoleERS[players.length];
+		RoleForumERS[] theReturn = new RoleForumERS[players.length];
 		for(int i = 0; i < players.length; i++){
 			if(match.getPlayerRole(players[i].getPlayerNumber()) != null){
 			theReturn[i] = match.getPlayerRole(players[i].getPlayerNumber()).getERSClass();
@@ -45,9 +46,9 @@ public class MatchERS{
 	public int getDay(){//Returns which Day(or Night) it is
 		return match.getPhaseDay();
 	}
-	public RoleERS[] getDeadPlayers(){//Returns int[] array of all alive player numbers
+	public RoleForumERS[] getDeadPlayers(){//Returns int[] array of all alive player numbers
 		Players[] players = (Players[])match.getDeadList().toArray();
-		RoleERS[] theReturn = new RoleERS[players.length];
+		RoleForumERS[] theReturn = new RoleForumERS[players.length];
 		for(int i = 0; i < players.length; i++){
 			if(match.getPlayerRole(players[i].getPlayerNumber()) != null){
 			theReturn[i] = match.getPlayerRole(players[i].getPlayerNumber()).getERSClass();
@@ -61,16 +62,16 @@ public class MatchERS{
 	public int getNumPlayers(){//returns total number of players
 		return match.getNumPlayers();
 	}
-	public RoleERS getPlayer(int playerNum){
-		RoleERS theReturn = null;
+	public RoleForumERS getPlayer(int playerNum){
+		RoleForumERS theReturn = null;
 		if(match.getPlayerRoleWithSwitch(playerNum) != null){
 			theReturn = match.getPlayerRoleWithSwitch(playerNum).getERSClass();
 		}
 		return theReturn;
 	}
-	public RoleERS[] getPlayers(){//Returns int[] array of all alive player numbers
+	public RoleForumERS[] getPlayers(){//Returns int[] array of all alive player numbers
 		Players[] players = (Players[])match.getPlayerList().toArray();
-		RoleERS[] theReturn = new RoleERS[players.length];
+		RoleForumERS[] theReturn = new RoleForumERS[players.length];
 		for(int i = 0; i < players.length; i++){
 			if(match.getPlayerRole(players[i].getPlayerNumber()) != null){
 			theReturn[i] = match.getPlayerRole(players[i].getPlayerNumber()).getERSClass();
@@ -78,7 +79,7 @@ public class MatchERS{
 		}
 		return theReturn;
 	}
-	public TeamERS getTeam(String teamName){
+	public TeamForumERS getTeam(String teamName){
 		return match.getTeam(teamName).getERSClass();
 	}
 	public boolean isAffAlive(String affName){//[IS_AFF_ALIVE](name of affliation)[/IS_AFF_ALIVE] Returns true if any members of entered Affliliation are still alive
@@ -128,7 +129,7 @@ public class MatchERS{
 		match.setSwitchedPlayerNum(player.getPlayerNum(),player2.getPlayerNum());
 	}
 	public void text(String msg){
-		match.send(CmdCompile.chatScreen(msg));
+		//match.send(CmdCompile.chatScreen(msg)); //TODO fix me...
 	}
 
 }

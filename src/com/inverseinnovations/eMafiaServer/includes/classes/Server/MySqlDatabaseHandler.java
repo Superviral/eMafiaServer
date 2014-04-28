@@ -220,6 +220,89 @@ public class MySqlDatabaseHandler extends Thread{
 		return role;
 	}
 	/**
+	 * Fetch RoleForum from Database(Forum Variant)
+	 * @param id database id
+	 * @return null upon error or role not found
+	 */
+	public RoleForum grabRoleForum(int id){
+		RoleForum role = null;
+		int setup;
+		String[] category = new String[2];
+		try {
+			st = con.prepareStatement("SELECT * FROM roles WHERE id = ?");
+			st.setInt(1, id);
+			rs = st.executeQuery();
+			if(rs.next()){ // If match.
+					if(rs.getString("setup").equals("DEFAULT")){
+						setup = Constants.TYPE_GAMEOB_ROLE_DEFAULT;
+					}
+					else{setup = Constants.TYPE_GAMEOB_ROLE_CUSTOM;
+					}
+					category[0] = rs.getString("cat1");
+					category[1] = rs.getString("cat2");
+
+					role = new RoleForum(null, rs.getInt("id"),rs.getString("name"),setup,rs.getString("affiliation"), category);//,category);
+					role.setVersion(rs.getInt("version"));
+					if(rs.getInt("teamWin") == 1){
+						role.setOnTeam(true);
+						role.setTeamName(rs.getString("teamName"));
+						if(rs.getInt("teamWin") == 1){role.setTeamWin(true);}
+						if(rs.getInt("visibleTeam") == 1){role.setTeamVisible(true);}
+						if(rs.getInt("chatAtNight") == 1){role.setChatAtNight(true);}
+					}
+
+					role.setActionCat(rs.getString("actionCat"));
+					if(StringUtils.isNotEmpty(rs.getString("victoryCon"))){role.setScript("victoryCon", rs.getString("victoryCon"));}
+					if(StringUtils.isNotEmpty(rs.getString("mayGameEndCon"))){role.setScript("mayGameEndCon", rs.getString("mayGameEndCon"));}
+					if(StringUtils.isNotEmpty(rs.getString("onStartup"))){role.setScript("onStartup", rs.getString("onStartup"));}
+					if(StringUtils.isNotEmpty(rs.getString("onDayStart"))){role.setScript("onDayStart", rs.getString("onDayStart"));}
+					if(StringUtils.isNotEmpty(rs.getString("onDayTargetChoice"))){role.setScript("onDayTargetChoice", rs.getString("onDayTargetChoice"));}
+					if(StringUtils.isNotEmpty(rs.getString("onDayEnd"))){role.setScript("onDayEnd", rs.getString("onDayEnd"));}
+					if(StringUtils.isNotEmpty(rs.getString("onNightStart"))){role.setScript("onNightStart", rs.getString("onNightStart"));}
+					if(StringUtils.isNotEmpty(rs.getString("onNightTargetChoice"))){role.setScript("onNightTargetChoice", rs.getString("onNightTargetChoice"));}
+					if(StringUtils.isNotEmpty(rs.getString("onNightEnd"))){role.setScript("onNightEnd", rs.getString("onNightEnd"));}
+					if(StringUtils.isNotEmpty(rs.getString("onAttacked"))){role.setScript("onAttacked", rs.getString("onAttacked"));}
+					if(StringUtils.isNotEmpty(rs.getString("onVisit"))){role.setScript("onVisit", rs.getString("onVisit"));}
+					if(StringUtils.isNotEmpty(rs.getString("onLynch"))){role.setScript("onLynch", rs.getString("onLynch"));}
+					if(StringUtils.isNotEmpty(rs.getString("onDeath"))){role.setScript("onDeath", rs.getString("onDeath"));}
+					//role.setScript("onRoleBlock?", rs.getString("onRoleBlock?"));
+					if(StringUtils.isNotEmpty(rs.getString("customScript"))){
+						String[] scripts;
+						if(rs.getString("customScript").contains(Constants.CMDVARDIVIDER)){
+							scripts = rs.getString("customScript").split(Constants.CMDVARDIVIDER);
+						}
+						else{
+							scripts = new String[]{rs.getString("customScript")};
+						}
+						String[] eventPlusScript;
+						for(String script : scripts){
+							if(script.contains(Constants.CMDVARSUBDIVIDER)){
+								eventPlusScript = script.split(Constants.CMDVARSUBDIVIDER);
+								role.setScript(eventPlusScript[0], eventPlusScript[1]);
+							}
+						}
+
+					}
+
+					role.targetablesNight1=rs.getInt("targetsN1");
+					role.targetablesNight2=rs.getInt("targetsN2");
+					role.targetablesDay1=rs.getInt("targetsD1");
+					role.targetablesDay2=rs.getInt("targetsD2");
+			}
+			else{Base.Console.warning("ERROR NO RESULTS for id "+id+"!\n");}
+		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase disconnected..attempting connection");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return grabRoleForum(id);
+			}
+			Base.Console.severe("GrabRole error");Base.Console.printStackTrace(e);
+		}
+		catch (SQLException e){Base.Console.severe("GrabRole error");Base.Console.printStackTrace(e);}
+		return role;
+	}
+	/**
 	 * Creates new role in database
 	 * @param role
 	 * @param setup an aproval based system for later

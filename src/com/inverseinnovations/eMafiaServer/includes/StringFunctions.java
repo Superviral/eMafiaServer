@@ -187,15 +187,17 @@ public class StringFunctions {
 	 * @param md5 String
 	 * @return String encrypted to MD5
 	 */
-	public static String MD5(String str) {
+	public static final String MD5(String str) {
 		try {
 			java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-			byte[] array = md.digest(str.getBytes("UTF-8"));
+			final byte[] array = md.digest(str.getBytes("UTF-8"));
 			StringBuffer sb = new StringBuffer();
 			for (int i = 0; i < array.length; ++i) {
 				sb.append(Integer.toHexString((array[i] & 0xFF) | 0x100).substring(1,3));
 			}
 			return sb.toString();
+			//final String result = new String(Hex.encodeHex(array));
+			//return result;
 		}
 		catch (java.security.NoSuchAlgorithmException e) {}
 		catch (UnsupportedEncodingException e) {
@@ -209,8 +211,17 @@ public class StringFunctions {
 			final StringCharacterIterator iterator = new StringCharacterIterator(aText);
 			char character =  iterator.current();
 			while (character != CharacterIterator.DONE ){
+				/*if (character == '<') {
+					result.append("&lt;");
+				}
+				else if (character == '>') {
+					result.append("&gt;");
+				}
 				if (character == '&') {
 					result.append("&amp;");
+				}*/
+				if (character == '"') {
+					result.append("&quot;");
 				}
 				else if (character == '\"') {
 					result.append("&quot;");
@@ -218,24 +229,91 @@ public class StringFunctions {
 				else if (character == '\t') {
 					addCharEntity(9, result);
 				}
+				/*
+				else if (character == '!') {
+					addCharEntity(33, result);
+				}
+				else if (character == '#') {
+					addCharEntity(35, result);
+				}
 				else if (character == '$') {
 					addCharEntity(36, result);
-				}
+				}*/
+				/*else if (character == '%') {
+					addCharEntity(37, result);
+				}*/
 				else if (character == '\'') {
 					addCharEntity(39, result);
+				}
+				/*else if (character == '(') {
+					addCharEntity(40, result);
+				}
+				else if (character == ')') {
+					addCharEntity(41, result);
+				}
+				else if (character == '*') {
+					addCharEntity(42, result);
 				}
 				else if (character == '+') {
 					addCharEntity(43, result);
 				}
+				else if (character == ',') {
+					addCharEntity(44, result);
+				}
+				else if (character == '-') {
+					addCharEntity(45, result);
+				}
+				else if (character == '.') {
+					addCharEntity(46, result);
+				}
+				else if (character == '/') {
+					addCharEntity(47, result);
+				}
+				else if (character == ':') {
+					addCharEntity(58, result);
+				}
+				else if (character == ';') {
+					addCharEntity(59, result);
+				}
 				else if (character == '=') {
 					addCharEntity(61, result);
+				}
+				else if (character == '?') {
+					addCharEntity(63, result);
 				}
 				else if (character == '@') {
 					addCharEntity(64, result);
 				}
+				else if (character == '[') {
+					addCharEntity(91, result);
+				}*/
 				else if (character == '\\') {
 					addCharEntity(92, result);
 				}
+				/*else if (character == ']') {
+					addCharEntity(93, result);
+				}
+				else if (character == '^') {
+					addCharEntity(94, result);
+				}
+				else if (character == '_') {
+					addCharEntity(95, result);
+				}
+				else if (character == '`') {
+					addCharEntity(96, result);
+				}
+				else if (character == '{') {
+					addCharEntity(123, result);
+				}
+				else if (character == '|') {
+					addCharEntity(124, result);
+				}
+				else if (character == '}') {
+					addCharEntity(125, result);
+				}
+				else if (character == '~') {
+					addCharEntity(126, result);
+				}*/
 				else {
 					//the char is not a special one
 					//add it to the result as is

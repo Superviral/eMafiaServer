@@ -107,6 +107,7 @@ public class SC2MafiaAPI extends Thread{
 				queryStringBuffer.append("&" + key + "=" + URLEncoder.encode(value, "UTF-8"));
 			}
 			if (sign) {
+				//System.out.println("encoded: "+queryStringBuffer.toString());
 				//queryStringBuffer.append("&api_sig="+ generateHash( (queryStringBuffer.toString() + apiAccessToken+ apiClientID + secret + apikey)).toLowerCase());
 				queryStringBuffer.append("&api_sig="+ StringFunctions.MD5( (queryStringBuffer.toString() + apiAccessToken+ apiClientID + secret + apikey)).toLowerCase());
 			}
@@ -685,6 +686,14 @@ public class SC2MafiaAPI extends Thread{
 	 * @param message
 	 * @return true on successs
 	 */
+	public boolean post_Edit(int postid,String message){
+		return post_Edit(""+postid, message);
+	}
+	/**Attempts to edit a post based on the post id
+	 * @param postid
+	 * @param message
+	 * @return true on successs
+	 */
 	public boolean post_Edit(String postid,String message){
 		return post_Edit(postid, message, 0);
 	}
@@ -728,17 +737,25 @@ public class SC2MafiaAPI extends Thread{
 	/**Attempts to post a new reply in said Thread
 	 * @param threadid
 	 * @param message
-	 * @return true on success
+	 * @return Post id(int) on success
 	 */
-	public boolean post_New(String threadid,String message){
+	public String post_New(int threadid,String message){
+		return post_New(""+threadid, message);
+	}
+	/**Attempts to post a new reply in said Thread
+	 * @param threadid
+	 * @param message
+	 * @return Post id(int) on success
+	 */
+	public String post_New(String threadid,String message){
 		return post_New(threadid, message, 0);
 	}
 	/**Attempts to post a new reply in said Thread
 	 * @param threadid
 	 * @param message
-	 * @return true on success
+	 * @return Post id(int) on success
 	 */
-	private boolean post_New(String threadid,String message, int loop){
+	private String post_New(String threadid,String message, int loop){
 		loop++;
 		String errorMsg;
 		HashMap<String, String> params = new HashMap<String, String>();
@@ -749,7 +766,7 @@ public class SC2MafiaAPI extends Thread{
 		if(loop < 5){
 			if(errorMsg != null){
 				if(StringFunctions.isInteger(errorMsg.substring(0, 1))){//success
-					return true;
+					return errorMsg;
 				}
 				else if(errorMsg.equals("nopermission_loggedout")||errorMsg.equals("invalid_accesstoken")){
 					forum_Login();
@@ -763,7 +780,7 @@ public class SC2MafiaAPI extends Thread{
 			}
 		}
 		Base.Console.warning("SC2Mafia Forum API unable post reply! Reason: '"+errorMsg+"'");
-		return false;
+		return errorMsg;
 	}
 	public void run(){
 		Properties props = System.getProperties();
@@ -840,6 +857,16 @@ public class SC2MafiaAPI extends Thread{
 	 * @param message
 	 * @return int(int String) on success, errormsg otherwise
 	 */
+	public String thread_New(int forumid,String subject,String message){
+		return thread_New(""+forumid,subject,message);
+	}
+	/**Attempts to post a new Thread in the forum, returns the posted Thread id and Post id for later use.
+	 * Returns two numbers seperated by a space on success.'(threadid) (postid)'
+	 * @param forumid
+	 * @param subject
+	 * @param message
+	 * @return int(int String) on success, errormsg otherwise
+	 */
 	public String thread_New(String forumid,String subject,String message){
 		return thread_New(forumid,subject,message, 0);
 	}
@@ -871,7 +898,7 @@ public class SC2MafiaAPI extends Thread{
 					}
 					return errorMsg;
 				}
-				else if(errorMsg.equals("invalid_api_signature")){//XXX need to check this
+				else if(errorMsg.equals("invalid_api_signature")){
 					return thread_New(forumid, subject, message, loop);
 				}
 				else{
