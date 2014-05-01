@@ -6,9 +6,11 @@ package com.inverseinnovations.eMafiaServer.includes.classes.GameObjects;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -22,6 +24,7 @@ import com.inverseinnovations.eMafiaServer.includes.classes.ERS.MatchForumERS;
 
 public class MatchForum extends GameObject{
 	public Game Game;
+	public int testNum = 42;
 	private int signupThreadId;
 	private int signupPostId;
 	private int signupSignId;
@@ -50,7 +53,7 @@ public class MatchForum extends GameObject{
 	private Map<Integer, Integer> playerNumSwitch = new LinkedHashMap<Integer, Integer>();
 
 	/** Creates a new Match with default settings for Forum games*/
-	public MatchForum(Game game, String name) {
+	public MatchForum(final Game game, String name) {
 		super(0, "E-FM "+name, Constants.TYPE_GAMEOB_MATCHFORUM);
 		this.Game = game;
 		//Game.setMatchForum(this);
@@ -75,7 +78,7 @@ public class MatchForum extends GameObject{
 		}
 
 		//Default Roles Possible
-		int[] rolesToAdd = new int[]{1,2,3,4,6,7};//Cit,Sheriff,Doc,Mafiso,Escort,GF
+		int[] rolesToAdd = new int[]{1,2,3,4,5,6,7};//Cit,Sheriff,Doc,Mafiso,Escort,GF
 		for(int role: rolesToAdd){
 			addRolesPossible(role);
 		}
@@ -85,26 +88,36 @@ public class MatchForum extends GameObject{
 	 */
 	public void postMatch(){
 		//role setup
-				String setup = "";
-				for(RolesOrig role : this.getRoleSetup()){
-					if (role != null){
-						if(role.eID > 0){//is a pure role
-							RoleForum pureRole = Game.Base.MySql.grabRoleForum(role.eID);
-							if(pureRole !=null){
-								setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"]"+pureRole.getName()+"[/URL]<BR>";
-								//setup += pureRole.getName()+"<BR>";
-							}
-						}
-						else{//is Category
-							setup += role.affiliation+" "+role.category[0]+"<BR>";
-						}
+		String setup = "";
+		for(RolesOrig role : this.getRoleSetup()){
+			if (role != null){
+				if(role.eID > 0){//is a pure role
+					RoleForum pureRole = Game.Base.MySql.grabRoleForum(role.eID);
+					if(pureRole !=null){//[COLOR=#FF0000]
+						String color = "A9A9A9";
+						if(pureRole.getAffiliation().equals("TOWN")){color = "00FF00";}else if(pureRole.getAffiliation().equals("MAFIA")){color = "FF0000";}
+						//setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"]"+pureRole.getName()+"[/URL]<BR>";
+						//setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"][COLOR="+color+"]"+pureRole.getName()+"[/COLOR][/URL]<BR>";
+						setup += "[COLOR="+color+"]"+pureRole.getName()+"[/COLOR]<BR>";
+						//setup += pureRole.getName()+"<BR>";
 					}
 				}
+				else{//is Category
+					String color = "A9A9A9";
+					if(role.affiliation.equals("TOWN")){color = "00FF00";}else if(role.affiliation.equals("MAFIA")){color = "FF0000";}
+					//setup += role.affiliation+" "+role.category[0]+"<BR>";
+					setup += "[COLOR="+color+"]"+role.affiliation+" "+role.category[0]+"[/COLOR]<BR>";
+				}
+			}
+		}
 		//roles possible
 		String possible = "";
 		for(RoleForum role : getRolesPossible()){
 			if (role != null){
-				possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"]"+role.getName()+"[/URL]<BR>";
+				String color = "A9A9A9";
+				if(role.getAffiliation().equals("TOWN")){color = "00FF00";}else if(role.getAffiliation().equals("MAFIA")){color = "FF0000";}
+				//possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"]"+role.getName()+"[/URL]<BR>";
+				possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"][COLOR="+color+"]"+role.getName()+"[/COLOR][/URL]<BR>";
 				//possible += role.getName()+"<BR>";
 			}
 		}
@@ -120,33 +133,12 @@ public class MatchForum extends GameObject{
 				"<BR>" +
 				setup + //SETUP HERE
 				"<BR>" +
-				"[COLOR=#DDA0DD][SIZE=5]Win Conditions :[/SIZE][/COLOR][SPOILER=]" +
-				"Win Conditions ToDo" + //WIN CONS HERE
-				"[/SPOILER]<BR>" +
-				"[SIZE=5][COLOR=#DDA0DD]Possible Roles :[/COLOR][/SIZE][SPOILER=]" +
-				possible + //POSSIBLE ROLES HERE
-				"[/SPOILER]<BR>" +
-				"[COLOR=#DDA0DD][SIZE=5]Order of Opperations :[/SIZE][/COLOR][SPOILER=]" +
+				"[COLOR=#DDA0DD][SIZE=5]Order of Operations :[/SIZE][/COLOR][SPOILER=]" +
 				order + //ORDER OF OP HERE
 				"[/SPOILER]<BR>" +
-				"[COLOR=#DDA0DD][SIZE=5]Rules :[/SIZE][/COLOR]<BR>" +
-				"<BR>" +
-				"Vote using [Vote] tags.<BR>" +
-				"<BR>" +
-				"You can post pictures, though follow the forum picture rule.<BR>" +
-				"Videos are only allowed when not in autoplay.<BR>" +
-				"<BR>" +
-				"Show activity with a minimum of 3 constructive or non-forced posts.<BR>" +
-				"Lurking is discouraged. If you are forced inactive, please -withdraw from the game so another may take your place.<BR>" +
-				"<BR>" +
-				"No outside of game communication, other than provided chat channels.(Exception for night chats at this time)<BR>" +
-				"No editing or deleting of posts.<BR>" +
-				"No sharing of night chats.<BR>" +
 				"[/CENTER][/B][/COLOR]";
 
-			System.out.println(StringFunctions.querySafeString(message));
-
-
+		boolean nextPost = false;
 		String threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIGNUPS, getName()+" Signups", message);
 		if(StringFunctions.isInteger(threadMsg.substring(0, 1))){
 			if(threadMsg.contains(" ")){
@@ -157,14 +149,119 @@ public class MatchForum extends GameObject{
 				if(StringFunctions.isInteger(ids[1])){
 					setSignupPostId(Integer.parseInt(ids[1]));
 				}
-				Game.Base.Console.debug("New Signup successful... thread ID is "+ids[0]+" post id is "+ids[1]);
+				Game.Base.Console.debug("New Setup successful... thread ID is "+ids[0]+" post id is "+ids[1]);
+				nextPost = true;
 			}
 			else{
-				Game.Base.Console.debug("New Signup response size error..: "+threadMsg);
+				Game.Base.Console.debug("New Setup response size error..: "+threadMsg);
 			}
 		}
 		else{
-			Game.Base.Console.debug("New Signup failed... : "+threadMsg);
+			Game.Base.Console.debug("New Setup failed... : "+threadMsg);
+		}
+		if(nextPost){
+			nextPost = false;
+			message =
+					"[COLOR=#AFEEEE][B][CENTER]" +
+					"[COLOR=#DDA0DD][SIZE=5]Win Conditions :[/SIZE][/COLOR][SPOILER=]" +
+					"Win Conditions ToDo" + //WIN CONS HERE
+					"[/SPOILER]<BR>" +
+					"[SIZE=5][COLOR=#DDA0DD]Possible Roles :[/COLOR][/SIZE][SPOILER=]" +
+					possible + //POSSIBLE ROLES HERE
+					"[/SPOILER]<BR>" +
+					"[COLOR=#DDA0DD][SIZE=5]Rules :[/SIZE][/COLOR]<BR>" +
+					"<BR>" +
+					"Vote using [Vote] tags.<BR>" +
+					"<BR>" +
+					"You can post pictures, though follow the forum picture rule.<BR>" +
+					"Videos are only allowed when not in autoplay.<BR>" +
+					"<BR>" +
+					"Show activity with a minimum of 3 constructive or non-forced posts.<BR>" +
+					"Lurking is discouraged. If you are forced inactive, please -withdraw from the game so another may take your place.<BR>" +
+					"<BR>" +
+					"No outside of game communication, other than provided chat channels.(Exception for night chats at this time.)<BR>" +
+					"No editing or deleting of posts.<BR>" +
+					"No sharing of night chats.<BR>" +
+					"[/CENTER][/B][/COLOR]";
+
+			threadMsg = Game.Base.ForumAPI.post_New(getSignupThreadId(), message);
+			if(StringFunctions.isInteger(threadMsg.substring(0, 1))){
+				if(threadMsg.contains(" ")){
+					String[] ids = threadMsg.split(" ");
+					Game.Base.Console.debug("Second Setup successful... thread ID is "+ids[0]+" post id is "+ids[1]);
+					nextPost = true;
+				}
+				else{
+					Game.Base.Console.debug("Second Setup response size error..: "+threadMsg);
+				}
+			}
+			else{
+				Game.Base.Console.debug("Second Setup failed... : "+threadMsg);
+			}
+		}
+		if(nextPost){
+			postSignup(false);
+		}
+	}
+	/**
+	 * Posts/edits the sign up post within the Signup/setup thread
+	 * @param edit true is editting the already made post, false is making new
+	 */
+	public void postSignup(boolean edit){
+		String signs = "";
+		int loop = 1;
+		for(Players player : getSignupList()){
+			if (player != null){
+				signs += loop+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]<BR>";
+				loop++;
+			}
+		}
+		if(loop == 1){signs = "No one has signed<BR>";}
+		String reserves = "";
+		loop = 1;
+		for(Players player : getReserveList()){
+			if (player != null){
+				reserves += loop+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]<BR>";
+				loop++;
+			}
+		}
+		if(loop == 1){reserves = "No one has reserved<BR>";}
+
+		String message =
+				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=5]Sign Up List :[/SIZE][/COLOR]<BR>" +
+				signs + //SETUP HERE
+				"<BR>" +
+				"[COLOR=#DDA0DD][SIZE=5]Reserve List :[/SIZE][/COLOR]<BR>" +
+				reserves + //ORDER OF OP HERE
+				"<BR>" +
+				"To sign up for this match PM the message [COLOR=#FF0000]-sign[/COLOR] or [COLOR=#FF0000]-reserve[/COLOR] to me!<BR>" +
+				"This list will update every hour(may not during testing if offline)" +
+				"testNum "+testNum+"[/CENTER][/B][/COLOR]";
+		if(edit){
+			boolean threadMsg = Game.Base.ForumAPI.post_Edit(getSignupSignId(), message);
+			if(threadMsg){
+				Game.Base.Console.debug("Edit Signup successful...");
+			}
+			else{
+				Game.Base.Console.debug("Edit Signup failed... id: "+getSignupSignId());
+			}
+		}
+		else{
+			String threadMsg = Game.Base.ForumAPI.post_New(getSignupThreadId(), message);
+			if(StringFunctions.isInteger(threadMsg.substring(0, 1))){
+				if(threadMsg.contains(" ")){
+					String[] ids = threadMsg.split(" ");
+					ids[1] = ids[1].substring(0, ids[1].length() - 2);
+					Game.Base.Console.debug("Post Signup successful... thread ID is "+ids[0]+" post id is "+ids[1]);
+					setSignupSignId(Integer.parseInt(ids[1]));
+				}
+				else{
+					Game.Base.Console.debug("Post Signup response size error..: "+threadMsg);
+				}
+			}
+			else{
+				Game.Base.Console.debug("Post Signup failed... : "+threadMsg);
+			}
 		}
 	}
 	/**
@@ -273,6 +370,7 @@ public class MatchForum extends GameObject{
  		Players chara = new Players();
  		chara.fID = forumId;
  		chara.inGameName = username;
+
  		addUserSignup(chara);
 	}
  	/**
@@ -280,6 +378,8 @@ public class MatchForum extends GameObject{
  	 * @param chara
  	 */
  	public void addUserSignup(Players chara){
+
+ 		removeUserReserve(chara.getFID());//remove from reserves first
  		signups.put(chara.getFID(), chara);
  	}
 	/**
@@ -312,6 +412,7 @@ public class MatchForum extends GameObject{
  	 * @param chara
  	 */
  	public void addUserReserve(Players chara){
+ 		removeUserSignup(chara.getFID());//remove from signup first
  		reserves.put(chara.getFID(), chara);
  	}
  	/**
@@ -340,12 +441,54 @@ public class MatchForum extends GameObject{
 	public Map<Integer, Players> getCharacters(){
 		return this.characters;
 	}
+	/**
+	 * Returns Map of all Players signed up for the match
+	 */
+	public Map<Integer, Players> getSignups(){
+		return this.signups;
+	}
+	/**
+	 * Returns Map of all Players reserved for the match
+	 */
+	public Map<Integer, Players> getReserves(){
+		return this.reserves;
+	}
+	/**
+	 * Returns List of all Players signed up for the match
+	 */
+	public List<Players> getSignupList(){
+		List<Players> list = new ArrayList<Players>();
+		Iterator<Entry<Integer, Players>> it = getSignups().entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry<Integer, Players> pairs = it.next();
+	        if(pairs.getValue() != null){
+				list.add(pairs.getValue());
+			}
+	        it.remove(); // avoids a ConcurrentModificationException
+	    }
+	    return list;
+	}
+	/**
+	 * Returns List of all Players reserved for the match
+	 */
+	public List<Players> getReserveList(){
+		List<Players> list = new ArrayList<Players>();
+		Iterator<Entry<Integer, Players>> it = getReserves().entrySet().iterator();
+	    while (it.hasNext()) {
+	        Map.Entry<Integer, Players> pairs = it.next();
+	        if(pairs.getValue() != null){
+				list.add(pairs.getValue());
+			}
+	        it.remove(); // avoids a ConcurrentModificationException
+	    }
+	    return list;
+	}
 	/** Returns number of characters in room */
 	public int getNumChars(){
 		return this.characters.size();
 	}
 	/**Returns List of Characters currently in the match */
-	public List<Players> getCharacterList(){
+	public List<Players> getCharacterList(){//bad TODO
 		List<Players> list = new ArrayList<Players>();
 		for(Players chara : this.characters.values()){
 			list.add(chara);

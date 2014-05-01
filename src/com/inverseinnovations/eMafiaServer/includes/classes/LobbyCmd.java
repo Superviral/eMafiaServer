@@ -3,10 +3,8 @@ GNU GENERAL PUBLIC LICENSE V3
 Copyright (C) 2012  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map.Entry;
-
 import com.inverseinnovations.eMafiaServer.includes.CmdCompile;
 import com.inverseinnovations.eMafiaServer.includes.StringFunctions;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character;
@@ -15,7 +13,6 @@ import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Match;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Role;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.SocketClient;
-import com.inverseinnovations.eMafiaServer.includes.classes.Server.SC2MafiaAPI.Message;
 import com.inverseinnovations.sharedObjects.RoleData;
 
 /**
@@ -73,12 +70,18 @@ public class LobbyCmd {
 				if(c.Game.getMatchSignup() == null){
 					c.Game.setMatchSignup(new MatchForum(c.Game, "A Test Match 1"));
 					c.Game.getMatchSignup().setHost(3359);//apo
-						c.Game.getMatchSignup().addToRoleSetup(7);//GF
-						c.Game.getMatchSignup().addToRoleSetup(4);//mafiaso
+						c.Game.getMatchSignup().addToRoleSetup(7);//gf
+						c.Game.getMatchSignup().addToRoleSetup(4);//maf
+						c.Game.getMatchSignup().addToRoleSetup(4);//maf
+
+						/*c.Game.getMatchSignup().addToRoleSetup(7);//GF
+						c.Game.getMatchSignup().addToRoleSetup(4);//mafiaso*/
 						c.Game.getMatchSignup().addToRoleSetup(2);//sheriff
-						c.Game.getMatchSignup().addToRoleSetup(3);//doc
+						c.Game.getMatchSignup().addToRoleSetup("TOWN", "PROTECTIVE");
 						c.Game.getMatchSignup().addToRoleSetup(1);//cit
 						c.Game.getMatchSignup().addToRoleSetup(1);//cit
+						c.Game.getMatchSignup().addToRoleSetup(1);//cit*/
+						c.Game.getMatchSignup().addToRoleSetup(5);//electro
 					c.Game.getMatchSignup().postMatch();
 				}
 			}
@@ -261,36 +264,10 @@ public class LobbyCmd {
 		return;
 	}
 	public static void _parsepms(Character c, String phrase, byte[] data) {
-		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
-		c.Game.Base.Console.debug("Attempting to view pms");
-		ArrayList<Message> PMlist = c.Game.Base.ForumAPI.pm_ListPMs();
-		if(PMlist != null){
-			System.out.println("PMList not null");
-			for(Message msg:PMlist){
-				System.out.println("PMList on a msg..");
-				if(msg.message.contains(" ")){
-					String[] cmdPhrase = msg.message.split(" ", 2);
-					String cmd = cmdPhrase[0];
-					String para = cmdPhrase[1];
-
-					System.out.println("PMList split the msg...about to process "+cmd+" from "+msg.username);
-					ForumCmdHandler.processCmd(c.Game, msg.username, cmd, para);
-					System.out.println("PMList sent PM ");
-				}
-				else{
-					System.out.println("...about to process "+msg.message+" from "+msg.username);
-					ForumCmdHandler.processCmd(c.Game, msg.username, msg.message, null);
-					System.out.println("PMList sent PM ");
-				}
-			}
-		}
-		else{
-			c.Game.Base.Console.debug("view failed... : "+PMlist);
-		}
+		c.Game.hourlyChecks();
 		return;
 	}
 	public static void _emptyinbox(Character c, String phrase, byte[] data) {
-		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting empty the inbox");
 		//HashMap<String,String> PmMsg = c.Game.Base.ForumAPI.forum_ViewMember(3359);
 		String PmMsg = c.Game.Base.ForumAPI.pm_EmptyInbox();

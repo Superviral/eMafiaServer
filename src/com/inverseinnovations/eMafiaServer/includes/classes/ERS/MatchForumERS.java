@@ -5,10 +5,8 @@ package com.inverseinnovations.eMafiaServer.includes.classes.ERS;
 
 import java.util.Random;
 
-import com.inverseinnovations.eMafiaServer.includes.CmdCompile;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum.Players;
-import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Team;
 
 public class MatchForumERS{
 	private MatchForum match;

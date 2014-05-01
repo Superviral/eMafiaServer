@@ -4,12 +4,14 @@ Copyright (C) 2012  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes;
 
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
 
 import org.mozilla.javascript.ContextFactory;
 
@@ -18,9 +20,10 @@ import com.inverseinnovations.eMafiaServer.includes.SandboxContextFactory;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.*;
+import com.inverseinnovations.eMafiaServer.includes.classes.Server.SC2MafiaAPI.Message;
 /**Manages characters,matches,and the lobby*/
-public class Game {
-	public Base Base;//back reference to parent
+public final class Game {
+	public final Base Base;//back reference to parent
 
 	public boolean GAME_IS_RUNNING = true;
 	public boolean GAME_PAUSED = true;
@@ -39,26 +42,48 @@ public class Game {
 	/**
 	 * Prepares main Game handler
 	 */
-	public Game(Base base){
+	public Game(final Base base){
 		this.Base = base;
 		this.start_time = System.nanoTime();
 		ContextFactory.initGlobal(new SandboxContextFactory());
 
-		//scheduleTicker();
+		tickerSchedule();
 		//tickTask.doTask();//do without schedule
 	}
 	/**
 	 * Sets the Timer to the next hour
 	 */
-	public void scheduleTicker(){
+	public void tickerSchedule(){
+		/*if(ticker != null){
+			try {
+				ticker.cancel();
+				ticker.purge();
+			} catch (java.lang.IllegalStateException e) {}//ignore it
+		}*/
 		if(this.tickTask == null){
-			this.tickTask = new TickTask(this);
+			this.tickTask = new TickTask();
 		}
-		if(this.tickTask == null){
+		if(this.ticker == null){
 			this.ticker = new Timer();
 		}
-		ticker.cancel();
-		ticker.schedule(tickTask,nextHour());
+		try{
+			ticker.schedule(tickTask,nextHour(),1000*60*60);//and repaet every hour
+		} catch (java.lang.IllegalStateException e) {
+			tickerCancel();
+			ticker.schedule(tickTask,nextHour(),1000*60*60);//and repaet every hour
+		}
+	}
+	/**
+	 * Sets the Timer to the next hour
+	 */
+	public void tickerCancel(){
+		if(ticker != null){
+			try {
+				ticker.cancel();
+				ticker.purge();
+			} catch (java.lang.IllegalStateException e) {}//ignore it
+			ticker = null;
+		}
 	}
 	/**
 	 * Assigns a Usergroup to Game(),
@@ -199,23 +224,55 @@ public class Game {
 		cal.add(Calendar.HOUR, 1);
 		return cal.getTime();
     }
+	public void hourlyChecks(){
+		//Do everything here!
+		Base.Console.debug("Attempting to view pms");
+		ArrayList<Message> PMlist = Base.ForumAPI.pm_ListPMs();
+		String empty = Base.ForumAPI.pm_EmptyInbox();
+		if(empty.equals("pm_messagesdeleted")){
+			Base.Console.debug("Emptied PM box");
+		}
+		else{
+			Base.Console.debug("Emptied PM box failed... : "+empty);
+		}
+		if(PMlist != null){
+			for(Message msg:PMlist){
+				if(msg.message.contains(" ")){
+					String[] cmdPhrase = msg.message.split(" ", 2);
+					String cmd = cmdPhrase[0];
+					String para = cmdPhrase[1];
+
+					System.out.println("PMList split the msg...about to process "+cmd+" from "+msg.username);
+					ForumCmdHandler.processCmd(this, msg.userid, msg.username, cmd, para);
+				}
+				else{
+					System.out.println("...about to process "+msg.message+" from "+msg.username);
+					ForumCmdHandler.processCmd(this, msg.userid, msg.username, msg.message, null);
+					System.out.println("PMList sent PM ");
+				}
+				try {
+					TimeUnit.SECONDS.sleep(7);
+				}catch (InterruptedException e) {e.printStackTrace();}
+				System.out.println("PMList processed PM "+msg.title+" from "+msg.username);
+			}
+			getMatchSignup().postSignup(true);
+		}
+		else{
+			Base.Console.debug("view failed... : "+PMlist);
+		}
+	}
 	/**
 	 * Timer Ticker for executing hourly tasks
 	 */
 	private class TickTask extends TimerTask {
-		Game Game;
 
-		public TickTask(Game game){
-			this.Game = game;
+		public TickTask(){
+
 		}
 		@Override
 		public void run() {
-			doTask();
-			Game.scheduleTicker();
+			hourlyChecks();
+			//Game.scheduleTicker();
 		}
-		public void doTask(){
-			//Do everything here!
-	    }
-
 	}
 }

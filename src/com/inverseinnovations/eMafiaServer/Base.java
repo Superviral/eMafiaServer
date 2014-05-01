@@ -8,15 +8,15 @@ import com.inverseinnovations.eMafiaServer.includes.classes.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.*;
 
-public class Base {
+public final class Base {
 	private boolean GAME_IS_RUNNING = true;
 	public int program_faults = 0;
-	public Console Console = new Console(this);
-	public Settings Settings = new Settings(this);
-	public SocketServer Server = new SocketServer(this, Settings.SERVER_HOST, Settings.SERVER_PORT, Settings.SERVER_MAX_CLIENTS);
-	public MySqlDatabaseHandler MySql = new MySqlDatabaseHandler(this);
-	public SC2MafiaAPI ForumAPI = new SC2MafiaAPI(this, Settings.APIURL, Settings.APIKEY, "eMafiaServer Debugging atm - Hi Nick", Constants.VERSION);
-	public Game Game = new Game(this);
+	public final Console Console = new Console(this);
+	public final Settings Settings = new Settings(this);
+	public final SocketServer Server = new SocketServer(this, Settings.SERVER_HOST, Settings.SERVER_PORT, Settings.SERVER_MAX_CLIENTS);
+	public final MySqlDatabaseHandler MySql = new MySqlDatabaseHandler(this);
+	public final SC2MafiaAPI ForumAPI = new SC2MafiaAPI(this, Settings.APIURL, Settings.APIKEY, "eMafiaServer Debugging atm - Hi Nick", Constants.VERSION);
+	public final Game Game = new Game(this);
 
 	public Base(){
 		synchronized(this){
@@ -48,6 +48,7 @@ public class Base {
 			new Match(Game, "Another Match");
 			Server.listen();//should only be called once
 
+			//Game.scheduleTicker();
 			Console.config("eMafia Server "+Constants.VERSION+" is now up and running!");
 		}
 		else{

@@ -15,7 +15,7 @@ import com.inverseinnovations.eMafiaServer.*;
 import com.inverseinnovations.eMafiaServer.includes.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.*;
 /**Manages connectivity between server and clients*/
-public class SocketServer {
+public final class SocketServer {
 	public  Base Base;
 	private ServerSocket socket = null;
 	private String address;//server up

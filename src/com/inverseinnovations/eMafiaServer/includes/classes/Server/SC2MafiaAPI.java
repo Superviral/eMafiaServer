@@ -27,7 +27,7 @@ import com.inverseinnovations.eMafiaServer.includes.StringFunctions;
 
 
 /** A class to provide an easy to use wrapper around the vBulletin REST API.*/
-public class SC2MafiaAPI extends Thread{
+public final class SC2MafiaAPI extends Thread{
 	public class Message{
 		public String pmid;
 		public String sendtime;
@@ -541,7 +541,7 @@ public class SC2MafiaAPI extends Thread{
 		loop++;
 		HashMap<String, String> params = new HashMap<String, String>();//150885
 		//params.put("forumid", forumid);
-		params.put("dateline", "1397873956");
+		params.put("dateline", "9876543210");
 		params.put("folderid", "0");
 		errorMsg = parseResponse(callMethod("private_confirmemptyfolder", params, true));
 		if(loop < 5){//no inifinite loop by user
@@ -612,6 +612,7 @@ public class SC2MafiaAPI extends Thread{
 		return pm_SendNew( user, title, message, 0);
 	}
 	/**Sends a message to the 'user' using the saved Forum User Proxy(should be eMafia Game Master)
+	 * pmfloodcheck = too many PMs too fast
 	 * @param user
 	 * @param title subject
 	 * @param message
