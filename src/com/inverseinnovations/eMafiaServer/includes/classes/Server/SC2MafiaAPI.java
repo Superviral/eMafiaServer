@@ -573,7 +573,7 @@ public final class SC2MafiaAPI extends Thread{
 	/**Returns list of PMs in the inbox
 	 * @return
 	 */
-	private ArrayList<Message> pm_ListPMs(int loop){
+	private ArrayList<Message> pm_ListPMs(int loop){//TODO need to reserve to order to show oldest first
 		String errorMsg;
 		HashMap<String, String> params = new HashMap<String, String>();
 		LinkedTreeMap<String,Object> linkmap = callMethod("private_messagelist", params, true);

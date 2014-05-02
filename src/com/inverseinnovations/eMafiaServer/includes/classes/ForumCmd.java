@@ -3,9 +3,6 @@ GNU GENERAL PUBLIC LICENSE V3
 Copyright (C) 2012  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes;
 
-import com.inverseinnovations.eMafiaServer.includes.StringFunctions;
-import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum.Players;
-
 /**
  * Provides list of all commands a Character may call when inside a Lobby<br>
  * All method names must be appended to CMDLIST[] to be callable
@@ -21,18 +18,7 @@ public class ForumCmd {
 	public static void sign(final Game Game, int forumId, String username, String phrase) {
 		Game.Base.Console.debug(username+" signing");
 		if(Game.getMatchSignup() != null){
-				String string = "";
-				for(Players player:Game.getMatchSignup().getSignupList()){
-					string += player.getName()+" ";
-				}
-				Game.Base.Console.debug("Before adding signup had: "+string);
 			Game.getMatchSignup().addUserSignup(forumId, username);
-				string = "";
-				for(Players player:Game.getMatchSignup().getSignupList()){
-					string += player.getName()+" ";
-				}
-				Game.getMatchSignup().testNum = StringFunctions.randInt(1, 200);
-				Game.Base.Console.debug(Game.getMatchSignup().testNum+" After adding signup had: "+string);
 			Game.Base.ForumAPI.pm_SendNew(username, Game.getMatchSignup().getName()+" Signups", "You've signed up for "+Game.getMatchSignup().getName()+"!<BR>If you feel you can't participate in the future, please -withdraw.<BR>Thanks for helping out.");
 		}
 	}

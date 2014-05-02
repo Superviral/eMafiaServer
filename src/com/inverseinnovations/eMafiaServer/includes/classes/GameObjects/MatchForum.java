@@ -24,12 +24,12 @@ import com.inverseinnovations.eMafiaServer.includes.classes.ERS.MatchForumERS;
 
 public class MatchForum extends GameObject{
 	public Game Game;
-	public int testNum = 42;
 	private int signupThreadId;
 	private int signupPostId;
 	private int signupSignId;
 	private int matchThreadId;
 	private int matchPostId;
+	private boolean signupChanges = false;//if the post needs to be editted on the hour
 	private MatchForumERS matchERS = null;
 	private Map<Integer, Players> characters = Collections.synchronizedMap(new ConcurrentHashMap <Integer, Players>());//will make the signup
 	private Map<Integer, Players> signups = new LinkedHashMap<Integer, Players>();
@@ -236,14 +236,17 @@ public class MatchForum extends GameObject{
 				"<BR>" +
 				"To sign up for this match PM the message [COLOR=#FF0000]-sign[/COLOR] or [COLOR=#FF0000]-reserve[/COLOR] to me!<BR>" +
 				"This list will update every hour(may not during testing if offline)" +
-				"testNum "+testNum+"[/CENTER][/B][/COLOR]";
+				"[/CENTER][/B][/COLOR]";
 		if(edit){
-			boolean threadMsg = Game.Base.ForumAPI.post_Edit(getSignupSignId(), message);
-			if(threadMsg){
-				Game.Base.Console.debug("Edit Signup successful...");
-			}
-			else{
-				Game.Base.Console.debug("Edit Signup failed... id: "+getSignupSignId());
+			if(signupChanges){
+				boolean threadMsg = Game.Base.ForumAPI.post_Edit(getSignupSignId(), message);
+				if(threadMsg){
+					Game.Base.Console.debug("Edit Signup successful...");
+					signupChanges = false;
+				}
+				else{
+					Game.Base.Console.debug("Edit Signup failed... id: "+getSignupSignId());
+				}
 			}
 		}
 		else{
@@ -378,7 +381,7 @@ public class MatchForum extends GameObject{
  	 * @param chara
  	 */
  	public void addUserSignup(Players chara){
-
+ 		signupChanges = true;
  		removeUserReserve(chara.getFID());//remove from reserves first
  		signups.put(chara.getFID(), chara);
  	}
@@ -387,6 +390,7 @@ public class MatchForum extends GameObject{
 	 * @param chara Character
 	 */
  	public void removeUserSignup(int forumId){
+ 		signupChanges = true;
 		signups.remove(forumId);
 	}
  	/**
@@ -412,6 +416,7 @@ public class MatchForum extends GameObject{
  	 * @param chara
  	 */
  	public void addUserReserve(Players chara){
+ 		signupChanges = true;
  		removeUserSignup(chara.getFID());//remove from signup first
  		reserves.put(chara.getFID(), chara);
  	}
@@ -464,7 +469,7 @@ public class MatchForum extends GameObject{
 	        if(pairs.getValue() != null){
 				list.add(pairs.getValue());
 			}
-	        it.remove(); // avoids a ConcurrentModificationException
+	        //it.remove(); // avoids a ConcurrentModificationException
 	    }
 	    return list;
 	}
@@ -479,7 +484,7 @@ public class MatchForum extends GameObject{
 	        if(pairs.getValue() != null){
 				list.add(pairs.getValue());
 			}
-	        it.remove(); // avoids a ConcurrentModificationException
+	        //it.remove(); // avoids a ConcurrentModificationException
 	    }
 	    return list;
 	}
