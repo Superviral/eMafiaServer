@@ -21,6 +21,7 @@ import com.inverseinnovations.eMafiaServer.includes.StringFunctions;
 import com.inverseinnovations.eMafiaServer.includes.scriptProcess;
 import com.inverseinnovations.eMafiaServer.includes.classes.Game;
 import com.inverseinnovations.eMafiaServer.includes.classes.ERS.MatchForumERS;
+import com.inverseinnovations.VBulletinAPI.Exception.*;
 
 public class MatchForum extends GameObject{
 	public Game Game;
@@ -139,22 +140,19 @@ public class MatchForum extends GameObject{
 				"[/CENTER][/B][/COLOR]";
 
 		boolean nextPost = false;
-		String threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIGNUPS, getName()+" Signups", message);
-		if(StringFunctions.isInteger(threadMsg.substring(0, 1))){
-			if(threadMsg.contains(" ")){
-				String[] ids = threadMsg.split(" ");
-				if(StringFunctions.isInteger(ids[0])){
-					setSignupThreadId(Integer.parseInt(ids[0]));
-				}
-				if(StringFunctions.isInteger(ids[1])){
-					setSignupPostId(Integer.parseInt(ids[1]));
-				}
-				Game.Base.Console.debug("New Setup successful... thread ID is "+ids[0]+" post id is "+ids[1]);
-				nextPost = true;
-			}
-			else{
-				Game.Base.Console.debug("New Setup response size error..: "+threadMsg);
-			}
+		int[] threadMsg = new int[2];
+		int[] postMsg = new int[2];
+		boolean success = false;
+		try {
+			threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIGNUPS, getName()+" Signups", message);
+			success = true;
+		}
+		catch (VBulletinAPIException e) {}
+		if(success){
+			setSignupThreadId(threadMsg[0]);
+			setSignupPostId(threadMsg[1]);
+			Game.Base.Console.debug("New Setup successful... thread ID is "+threadMsg[0]+" post id is "+threadMsg[1]);
+			nextPost = true;
 		}
 		else{
 			Game.Base.Console.debug("New Setup failed... : "+threadMsg);
@@ -184,19 +182,18 @@ public class MatchForum extends GameObject{
 					"No sharing of night chats.<BR>" +
 					"[/CENTER][/B][/COLOR]";
 
-			threadMsg = Game.Base.ForumAPI.post_New(getSignupThreadId(), message);
-			if(StringFunctions.isInteger(threadMsg.substring(0, 1))){
-				if(threadMsg.contains(" ")){
-					String[] ids = threadMsg.split(" ");
-					Game.Base.Console.debug("Second Setup successful... thread ID is "+ids[0]+" post id is "+ids[1]);
-					nextPost = true;
-				}
-				else{
-					Game.Base.Console.debug("Second Setup response size error..: "+threadMsg);
-				}
+			success = false;
+			try {
+				postMsg = Game.Base.ForumAPI.post_New(getSignupThreadId(), message);
+				success = true;
+			}
+			catch (VBulletinAPIException e) {}
+			if(success){
+				Game.Base.Console.debug("Second Setup successful... thread ID is "+postMsg[0]+" post id is "+postMsg[1]);
+				nextPost = true;
 			}
 			else{
-				Game.Base.Console.debug("Second Setup failed... : "+threadMsg);
+				Game.Base.Console.debug("Second Setup failed... : ");
 			}
 		}
 		if(nextPost){
@@ -239,7 +236,10 @@ public class MatchForum extends GameObject{
 				"[/CENTER][/B][/COLOR]";
 		if(edit){
 			if(signupChanges){
-				boolean threadMsg = Game.Base.ForumAPI.post_Edit(getSignupSignId(), message);
+				boolean threadMsg = false;
+				try {
+					threadMsg = Game.Base.ForumAPI.post_Edit(getSignupSignId(), message);
+				}catch (VBulletinAPIException e) {}
 				if(threadMsg){
 					Game.Base.Console.debug("Edit Signup successful...");
 					signupChanges = false;
@@ -250,20 +250,19 @@ public class MatchForum extends GameObject{
 			}
 		}
 		else{
-			String threadMsg = Game.Base.ForumAPI.post_New(getSignupThreadId(), message);
-			if(StringFunctions.isInteger(threadMsg.substring(0, 1))){
-				if(threadMsg.contains(" ")){
-					String[] ids = threadMsg.split(" ");
-					ids[1] = ids[1].substring(0, ids[1].length() - 2);
-					Game.Base.Console.debug("Post Signup successful... thread ID is "+ids[0]+" post id is "+ids[1]);
-					setSignupSignId(Integer.parseInt(ids[1]));
-				}
-				else{
-					Game.Base.Console.debug("Post Signup response size error..: "+threadMsg);
-				}
+			int[] threadMsg = new int[2];
+			boolean success = false;
+			try{
+				threadMsg = Game.Base.ForumAPI.post_New(getSignupThreadId(), message);
+				success = true;
+			}
+			catch (VBulletinAPIException e) {e.printStackTrace();}
+			if(success){
+				Game.Base.Console.debug("Post Signup successful... thread ID is "+threadMsg[0]+" post id is "+threadMsg[1]);
+				setSignupSignId(threadMsg[1]);
 			}
 			else{
-				Game.Base.Console.debug("Post Signup failed... : "+threadMsg);
+				Game.Base.Console.debug("Post Signup failed... : ");
 			}
 		}
 	}
@@ -959,21 +958,41 @@ public class MatchForum extends GameObject{
 //////////////////////////
 //////////Messages////////
 //////////////////////////
-	/** Send message to Signup thread */
-	public void sendSignup(String message){
-		Game.Base.ForumAPI.post_New(getSignupThreadId(), message);
+	/** Send message to Signup thread
+	 * @return true on successful post
+	 */
+	public boolean sendSignup(String message){
+		boolean success = false;
+		try {
+			Game.Base.ForumAPI.post_New(getSignupThreadId(), message);
+			success = true;
+		}
+		catch (VBulletinAPIException e) {}
+		return success;
 	}
 	/** Edits the orginal Signup post */
 	public void editSignup(String message){
-		Game.Base.ForumAPI.post_Edit(getSignupPostId(), message);
+		try {
+			Game.Base.ForumAPI.post_Edit(getSignupPostId(), message);
+		}catch (VBulletinAPIException e) {}
 	}
-	/** Send message to Match thread */
-	public void sendMatch(String message){
-		Game.Base.ForumAPI.post_New(getMatchThreadId(), message);
+	/** Send message to Match thread
+	 * @return true on successful post
+	 */
+	public boolean sendMatch(String message){
+		boolean success = false;
+		try {
+			Game.Base.ForumAPI.post_New(getMatchThreadId(), message);
+			success = true;
+		}
+		catch (VBulletinAPIException e) {}
+		return success;
 	}
 	/** Edits the orginal Match post */
 	public void editMatch(String message){
-		Game.Base.ForumAPI.post_Edit(getMatchPostId(), message);
+		try {
+			Game.Base.ForumAPI.post_Edit(getMatchPostId(), message);
+		}catch (VBulletinAPIException e) {}
 	}
 	/** Send PM to this player */
 	public void sendToPlayerNum(int playerNum, String title, String message){

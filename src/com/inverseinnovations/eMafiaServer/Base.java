@@ -7,6 +7,8 @@ import com.inverseinnovations.eMafiaServer.includes.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.*;
+import com.inverseinnovations.VBulletinAPI.*;
+//import com.inverseinnovations.VBulletinAPI.VBulletinAPI;
 
 public final class Base {
 	private boolean GAME_IS_RUNNING = true;
@@ -15,7 +17,7 @@ public final class Base {
 	public final Settings Settings = new Settings(this);
 	public final SocketServer Server = new SocketServer(this, Settings.SERVER_HOST, Settings.SERVER_PORT, Settings.SERVER_MAX_CLIENTS);
 	public final MySqlDatabaseHandler MySql = new MySqlDatabaseHandler(this);
-	public final SC2MafiaAPI ForumAPI = new SC2MafiaAPI(this, Settings.APIURL, Settings.APIKEY, "eMafiaServer Debugging atm - Hi Nick", Constants.VERSION);
+	public final VBulletinAPI ForumAPI = new VBulletinAPI(Settings.GAMEMASTERNAME, Settings.GAMEMASTERPASS, Settings.APIURL, Settings.APIKEY, "eMafiaServer Debugging atm - Hi Nick", Constants.VERSION);
 	public final Game Game = new Game(this);
 
 	public Base(){

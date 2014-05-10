@@ -13,6 +13,8 @@ import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Match;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Role;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.SocketClient;
+
+import com.inverseinnovations.VBulletinAPI.Exception.*;
 import com.inverseinnovations.sharedObjects.RoleData;
 
 /**
@@ -27,7 +29,7 @@ public class LobbyCmd {
 		//admin commands
 		//"_show_commands","_shutdown","timer_add","_setupbots","_makenpc","_force"
 		//experimental commands
-		"test","var_dump","_editpost","_newthread","_newpost","_parsepms","_emptyinbox","_forumsignup"
+		"test","var_dump","_editpost","_newthread","_newpost","_parsepms","_forumsignup"
 	};
 	public static void charaupdate(Character c, String phrase, byte[] data) {
 		String[] ephrase = phrase.split(" ");
@@ -229,24 +231,33 @@ public class LobbyCmd {
 	}
 	public static void _editpost(Character c, String phrase, byte[] data) {
 		// works -> c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "this is just a test..."); can't use a '
-		c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "You asked for it, you got. <br> Well...not much to say, Im a after all.");
+		try{
+			c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "You asked for it, you got. <br> Well...not much to say, Im a after all.");
+		}catch (VBulletinAPIException e) {}
 		return;
 	}
 	public static void _newthread(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting new thread");
-		String threadMsg = c.Game.Base.ForumAPI.thread_New("292", "This is just a test, do not panic", phrase);
-		if(StringFunctions.isInteger(threadMsg.substring(0, 1))){
-			if(threadMsg.contains(" ")){
-				String[] ids = threadMsg.split(" ");
-				c.Game.Base.Console.debug("New Thread successful... thread ID is "+ids[0]+" post id is "+ids[1]);
-			}
-			else{
-				c.Game.Base.Console.debug("New Thread response size error..: "+threadMsg);
-			}
+		int[] threadMsg = new int[2];
+		boolean success = false;
+		try {
+			threadMsg = c.Game.Base.ForumAPI.thread_New("292", "This is just a test, do not panic", phrase);
+			success = true;
+		} catch (InvalidAPISignature e) {
+			e.printStackTrace();
+		} catch (NoPermissionLoggedout e) {
+			e.printStackTrace();
+		} catch (InvalidAccessToken e) {
+			e.printStackTrace();
+		} catch (VBulletinAPIException e) {
+			e.printStackTrace();
+		}
+		if(success){
+			c.Game.Base.Console.debug("New Thread successful... thread ID is "+threadMsg[0]+" post id is "+threadMsg[1]);
 		}
 		else{
-			c.Game.Base.Console.debug("New Thread failed... : "+threadMsg);
+			c.Game.Base.Console.debug("New Thread failed...  ");
 		}
 		//2 in general
 		//292 is Simple OnGoing
@@ -255,29 +266,23 @@ public class LobbyCmd {
 	public static void _newpost(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
 		c.Game.Base.Console.debug("Attempting new post");
-		String postMsg = c.Game.Base.ForumAPI.post_New("26877", phrase);
-		if(StringFunctions.isInteger(postMsg)){
-			c.Game.Base.Console.debug("New Reply successful...Post id is "+postMsg);
+		int[] postMsg = new int[2];
+		boolean success = false;
+		try {
+			postMsg = c.Game.Base.ForumAPI.post_New("26877", phrase);
+			success = true;
+		}
+		catch (VBulletinAPIException e) {}
+		if(success){
+			c.Game.Base.Console.debug("New Reply successful...Post id is "+postMsg[1]);
 		}
 		else{
-			c.Game.Base.Console.debug("New Reply failed... : "+postMsg);
+			c.Game.Base.Console.debug("New Reply failed... : ");
 		}
 		return;
 	}
 	public static void _parsepms(Character c, String phrase, byte[] data) {
 		c.Game.hourlyChecks();
-		return;
-	}
-	public static void _emptyinbox(Character c, String phrase, byte[] data) {
-		c.Game.Base.Console.debug("Attempting empty the inbox");
-		//HashMap<String,String> PmMsg = c.Game.Base.ForumAPI.forum_ViewMember(3359);
-		String PmMsg = c.Game.Base.ForumAPI.pm_EmptyInbox();
-		if(PmMsg != null){
-			c.Game.Base.Console.debug("send successful...:"+PmMsg.toString());
-		}
-		else{
-			c.Game.Base.Console.debug("send failed... : "+PmMsg);
-		}
 		return;
 	}
 }

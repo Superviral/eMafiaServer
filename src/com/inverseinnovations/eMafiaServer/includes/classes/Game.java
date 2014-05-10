@@ -20,12 +20,12 @@ import com.inverseinnovations.eMafiaServer.includes.SandboxContextFactory;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.*;
-import com.inverseinnovations.eMafiaServer.includes.classes.Server.SC2MafiaAPI.Message;
+import com.inverseinnovations.VBulletinAPI.VBulletinAPI.Message;
+import com.inverseinnovations.VBulletinAPI.Exception.VBulletinAPIException;
 /**Manages characters,matches,and the lobby*/
 public final class Game {
 	public final Base Base;//back reference to parent
 
-	public int testVar = 1;
 	public boolean GAME_IS_RUNNING = true;
 	public boolean GAME_PAUSED = true;
 	private long start_time; // Game instance start time //
@@ -228,15 +228,21 @@ public final class Game {
 	public void hourlyChecks(){
 		//Do everything here!
 		Base.Console.debug("Performing hourly PM checks");
-		ArrayList<Message> PMlist = Base.ForumAPI.pm_ListPMs();
+		ArrayList<Message> PMlist = new ArrayList<Message>();
+		try {
+			PMlist = Base.ForumAPI.pm_ListPMs();
+		}catch (VBulletinAPIException e1) {}
 		if(PMlist != null){
 			if(!PMlist.isEmpty()){
-				String empty = Base.ForumAPI.pm_EmptyInbox();
-				if(empty.equals("pm_messagesdeleted")){
+				boolean empty = false;
+				try {
+					empty = Base.ForumAPI.pm_EmptyInbox();
+				}catch (VBulletinAPIException e1) {}
+				if(empty){
 					Base.Console.debug("Emptied PM box");
 				}
 				else{
-					Base.Console.debug("Emptied PM box failed... : "+empty);
+					Base.Console.debug("Emptied PM box failed... ");
 				}
 				for(Message msg:PMlist){
 					if(msg.message.contains(" ")){

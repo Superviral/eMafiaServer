@@ -13,6 +13,8 @@ import com.inverseinnovations.eMafiaServer.*;
 import com.inverseinnovations.eMafiaServer.includes.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.*;
+
+import com.inverseinnovations.VBulletinAPI.Exception.*;
 import com.inverseinnovations.sharedObjects.RoleData;
 
 /**Manages database interaction*/
@@ -605,44 +607,53 @@ public class MySqlDatabaseHandler extends Thread{
 		Random rand;rand = new Random();
 		String token = StringFunctions.Base64encode(StringFunctions.substr(username, 1, 1)+rand.nextInt(9999999)+StringFunctions.substr(username, 0, 1));
 		token = token.replace("==", "s8").replace("=", "").replace("+/", "");
-		return createAccount(username, pass, token, "", false);
+		return createAccount(username, pass, token, false);
 	}
 	/**
-	 * Creates entry in database for new account to be verified
-	 * and PMs a token through the SC@ forum to the user, needed for verification<br>
-	 * Only Forum account names are possible
-	 * @param username
-	 * @param pass must be in MD5 format
-	 * @param token token to be used in verification
-	 * @param retry true is token already sent to forum
-	 * @return "pm_messagesent" if creation was succesful
-	 */
-	private String createAccount(String username, String pass, String token, String errorMsg, boolean retry){
+	* Creates entry in database for new account to be verified
+	* and PMs a token through the SC@ forum to the user, needed for verification<br>
+	* Only Forum account names are possible
+	* @param username
+	* @param pass must be in MD5 format
+	* @param token token to be used in verification
+	* @param retry true is token already sent to forum
+	* @return "pm_messagesent" if creation was succesful
+	*/
+	private String createAccount(String username, String pass, String token, boolean retry){
 		String salt = generateSalt();
 		String crypt_password = crypt(pass,salt);
 		Long reg_time = System.currentTimeMillis()/1000;
+		boolean success = false;
 		//TODO SPAM: need to setup the said web service
 		if(retry == false){
-			errorMsg = Base.ForumAPI.pm_SendNew(username,"eMafia Account Verification",
+			try {
+				success = Base.ForumAPI.pm_SendNew(username,"eMafia Account Verification",
 					"[table][tr][td]Welcome to [B][COLOR=#DAA520]e[/COLOR]Mafia[/B], "+username+"![/td][/tr]" +
 					"[tr][td][/td][/tr][tr][td] Your account has been created, but still needs verification within 24 hours. Below is your verification code:[/td][/tr]" +
 					"[tr][td][CENTER][COLOR=WHITE][SIZE=6][B]"+token+"[/B][/SIZE][/COLOR][/CENTER][/td][/tr]" +
 					"[tr][td][/td][/tr][tr][td] If you are not the one that started the creation process, please ignore this email or click the link below to never receive any messages about [B][COLOR=#DAA520]e[/COLOR]Mafia[/B] again(link not available at this moment, contact Apocist):[/td][/tr]" +
 					"[tr][td][URL=http://eMafia.hikaritemple.com/spam?v="+token+"]http://eMafia.hikaritemple.com/spam?v="+token+"[/URL][/td][/tr]" +
 					"[tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][tr][td][/td][/tr][/table]");
+			} catch (PMRecipTurnedOff e) {
+				return "pmrecipturnedoff";
+			} catch (PMRecipientsNotFound e) {
+				return "pmrecipientsnotfound";
+			} catch (VBulletinAPIException e) {
+				return "unknownerror";
+			}
 		}
-		if(errorMsg.equals("pm_messagesent")){
+		if(success || retry){
 			try {
 				st = con.prepareStatement("INSERT INTO user_verify (username, pass, pass2, token, reg_time) VALUES (?,?,?,?,?)");
 				st.setString(1, username);st.setString(2, crypt_password);st.setString(3, salt);st.setString(4, token);st.setLong(5, reg_time);
 				st.executeUpdate();
-				return errorMsg;
+				return "pm_messagesent";
 			}
 			catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
 				Base.Console.severe("MySqlDatabase disconnected..attempting connection");
 				if(getConnected()){
 					this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
-					return createAccount(username, pass, token, errorMsg, true);
+					return createAccount(username, pass, token, true);
 				}
 				Base.Console.severe("Verify Account error");
 				Base.Console.printStackTrace(e);
@@ -654,7 +665,7 @@ public class MySqlDatabaseHandler extends Thread{
 				return "MySqlDatabaseHanlder.CreateAccount error";
 			}
 		}
-		return errorMsg;
+		return "unknownerror";
 	}
 	/**
 	 * Checks if username/password/token combo is correct
