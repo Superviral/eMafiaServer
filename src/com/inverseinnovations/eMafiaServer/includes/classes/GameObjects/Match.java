@@ -34,7 +34,7 @@ public class Match extends GameObject{
 	private advancePhaseTimer timerTask;
 	private int timerremain;
 	/**0 = setup/1 = naming/2 = inplay/3 = endgame*/
-	private int phaseMain = 0;
+	private int phaseMain = Constants.PHASEMAIN_SETUP;
 	/**Which day/night it is(only should apply is PhaseSetup is "inplay")*/
 	private int phaseDay = 1;
 	/**1=discuss/2=normal/3=trialplead/4=trialvote/6=lynch/8=night*/
@@ -1270,7 +1270,7 @@ public class Match extends GameObject{
 			}
 			doScriptProcess("onStartup");
 			for(int i = 1; i < this.players.length; i++){//tell each of their roles
-				getCharacter((getPlayer(i).getEID())).send(CmdCompile.chatScreen(StringFunctions.HTMLColor("FFFF00", getPlayer(i).inGameName+", your role is ")+StringFunctions.HTMLColor("00FF00", getPlayerRole(i).getName())));
+				getCharacter((getPlayer(i).getEID())).send(CmdCompile.chatScreen(StringFunctions.bbColor("FFFF00", getPlayer(i).inGameName+", your role is ")+StringFunctions.bbColor("00FF00", getPlayerRole(i).getName())));
 				getCharacter((getPlayer(i).getEID())).send(CmdCompile.setPlayerNum(i));
 				getCharacter((getPlayer(i).getEID())).send(CmdCompile.setTargetables(getPlayerRole(i)));
 				getCharacter((getPlayer(i).getEID())).send(CmdCompile.matchStart());
@@ -1666,7 +1666,7 @@ public class Match extends GameObject{
 			int loop = numWinners;
 			for(Players player:winners){
 				loop--;
-				message += StringFunctions.HTMLColor(player.getHexcolor(), player.getName());
+				message += StringFunctions.bbColor(player.getHexcolor(), player.getName());
 				if(loop != 0){if(numWinners > 2){message += ",";}}
 				if(loop == 1){message += " and";}
 				message += " ";
@@ -1675,7 +1675,7 @@ public class Match extends GameObject{
 		}
 		else if(numWinners == 1){
 			for(Players player:winners){
-				message += StringFunctions.HTMLColor(player.getHexcolor(), player.getName())+" ";
+				message += StringFunctions.bbColor(player.getHexcolor(), player.getName())+" ";
 			}
 			message += "has ";
 		}

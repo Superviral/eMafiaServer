@@ -12,10 +12,10 @@ import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
-
 import org.mozilla.javascript.ContextFactory;
 
 import com.inverseinnovations.eMafiaServer.*;
+import com.inverseinnovations.eMafiaServer.includes.Constants;
 import com.inverseinnovations.eMafiaServer.includes.SandboxContextFactory;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character;
@@ -215,60 +215,106 @@ public final class Game {
 		return Base.Server.getClient(id);
 	}
 	/**
-	 * Returns a Date of the very next hour
+	 * Returns a Date of the very next hour on the hour(0 min/0 sec)
 	 * @return
 	 */
-	private Date nextHour(){
+	public Date nextHour(){
+		return nextXHour(1);
+    }
+	/**
+	 * Returns a Date of X hours from now on the hour(0 min/0 sec)
+	 * @return
+	 */
+	public Date nextXHour(int hours){
 		Calendar cal = Calendar.getInstance();
 		cal.set(Calendar.SECOND, 0);
 		cal.set(Calendar.MINUTE, 0);
-		cal.add(Calendar.HOUR, 1);
+		cal.add(Calendar.HOUR, hours);
 		return cal.getTime();
     }
+	/**
+	 * Performs each hourly check within the Server. Includes Parsing PMs, checking matches for advancePhases, Starting Matches, ect
+	 */
 	public void hourlyChecks(){
 		//Do everything here!
+		Base.Console.debug("Performing hourly checks");
+		PMcheck();
+		//Controls the Ongoing
+		if(getMatchOngoing() != null){
+			getMatchOngoing().checkLynch();
+			if(getMatchOngoing().isTimerUp()){
+				//the timer came up and phase should have advanced
+			}
+		}
+
+
+		//Controls the Signups
+		if(getMatchSignup() != null){
+			getMatchSignup().postSignup(true);
+			if(getMatchSignup().getPhaseMain() <= Constants.PHASEMAIN_STARTING){//if in starting mode or below(signup too)
+				if(getMatchOngoing() == null){//only if there isnt a match ongoing
+					if(getMatchSignup().gameStart()){//perform possible game start(two phases) and if started..do this
+						setMatchOngoing(getMatchSignup());
+						setMatchSignup(null);//switch slots
+						Base.Console.debug("Signup is now Ongoing");
+					}
+				}
+			}
+		}
+	}
+	/**
+	 * Checks the PMs, performs the commands issued via PM, and empties the inbox
+	 * @return false on error
+	 */
+	public boolean PMcheck(){
+		boolean theReturn = true;
 		Base.Console.debug("Performing hourly PM checks");
 		ArrayList<Message> PMlist = new ArrayList<Message>();
 		try {
 			PMlist = Base.ForumAPI.pm_ListPMs();
-		}catch (VBulletinAPIException e1) {}
-		if(PMlist != null){
-			if(!PMlist.isEmpty()){
-				boolean empty = false;
-				try {
-					empty = Base.ForumAPI.pm_EmptyInbox();
-				}catch (VBulletinAPIException e1) {}
-				if(empty){
-					Base.Console.debug("Emptied PM box");
-				}
-				else{
-					Base.Console.debug("Emptied PM box failed... ");
-				}
-				for(Message msg:PMlist){
-					if(msg.message.contains(" ")){
-						String[] cmdPhrase = msg.message.split(" ", 2);
-						String cmd = cmdPhrase[0];
-						String para = cmdPhrase[1];
-
-						System.out.println("PMList split the msg...about to process "+cmd+" from "+msg.username);
-						ForumCmdHandler.processCmd(this, msg.userid, msg.username, cmd, para);
+		}catch (VBulletinAPIException e1) {theReturn = false;}
+		if(theReturn){
+			if(PMlist != null){
+				if(!PMlist.isEmpty()){
+					boolean empty = false;
+					try {
+						empty = Base.ForumAPI.pm_EmptyInbox();
+					}catch (VBulletinAPIException e1) {}
+					if(empty){
+						Base.Console.debug("Emptied PM box");
 					}
 					else{
-						System.out.println("...about to process "+msg.message+" from "+msg.username);
-						ForumCmdHandler.processCmd(this, msg.userid, msg.username, msg.message, null);
-						System.out.println("PMList sent PM ");
+						Base.Console.debug("Emptied PM box failed... ");
 					}
-					try {
-						TimeUnit.SECONDS.sleep(7);
-					}catch (InterruptedException e) {e.printStackTrace();}
-					System.out.println("PMList processed PM "+msg.title+" from "+msg.username);
+					for(Message msg:PMlist){
+						if(msg.message.contains(" ")){
+							String[] cmdPhrase = msg.message.split(" ", 2);
+							String cmd = cmdPhrase[0];
+							String para = cmdPhrase[1];
+
+							System.out.println("PMList split the msg...about to process "+cmd+" from "+msg.username);
+							ForumCmdHandler.processCmd(this, msg.userid, msg.username, cmd, para);
+						}
+						else{
+							System.out.println("...about to process "+msg.message+" from "+msg.username);
+							ForumCmdHandler.processCmd(this, msg.userid, msg.username, msg.message, null);
+							System.out.println("PMList sent PM ");
+						}
+						try {
+							TimeUnit.SECONDS.sleep(Constants.DELAY_BETWEEN_PMS);
+						}catch (InterruptedException e) {e.printStackTrace();}
+						System.out.println("PMList processed PM "+msg.title+" from "+msg.username);
+					}
 				}
 			}
-			getMatchSignup().postSignup(true);
+			else{
+				Base.Console.debug("PM checks failed... ");
+			}
 		}
 		else{
-			Base.Console.debug("PM checks failed... ");
+			Base.Console.debug("PM checks error... ");
 		}
+		return theReturn;
 	}
 	/**
 	 * Timer Ticker for executing hourly tasks

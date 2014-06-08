@@ -5,7 +5,11 @@ package com.inverseinnovations.eMafiaServer.includes.classes;
 
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.inverseinnovations.eMafiaServer.includes.CmdCompile;
+import com.inverseinnovations.eMafiaServer.includes.Constants;
 import com.inverseinnovations.eMafiaServer.includes.StringFunctions;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Lobby;
@@ -14,6 +18,7 @@ import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchFor
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Role;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.SocketClient;
 
+import com.inverseinnovations.VBulletinAPI.VBulletinAPI.Post;
 import com.inverseinnovations.VBulletinAPI.Exception.*;
 import com.inverseinnovations.sharedObjects.RoleData;
 
@@ -29,7 +34,7 @@ public class LobbyCmd {
 		//admin commands
 		//"_show_commands","_shutdown","timer_add","_setupbots","_makenpc","_force"
 		//experimental commands
-		"test","var_dump","_editpost","_newthread","_newpost","_parsepms","_forumsignup"
+		"test","var_dump","_sendpm","_newthread","_closethread", "_deletethread", "_hourlychecks","_forumsignup","_threadview","_addtosignup"
 	};
 	public static void charaupdate(Character c, String phrase, byte[] data) {
 		String[] ephrase = phrase.split(" ");
@@ -70,22 +75,30 @@ public class LobbyCmd {
 			else if(ephrase[0].equals("create")){
 				c.Game.Base.Console.debug("_forumsignup create hit..");
 				if(c.Game.getMatchSignup() == null){
-					MatchForum matchF = new MatchForum(c.Game, "A Test Match 1");
+					MatchForum matchF = new MatchForum(c.Game, "Another Test Match");
 					c.Game.setMatchSignup(matchF);
 					c.Game.getMatchSignup().setHost(3359);//apo
 						c.Game.getMatchSignup().addToRoleSetup(7);//gf
-						c.Game.getMatchSignup().addToRoleSetup(4);//maf
-						c.Game.getMatchSignup().addToRoleSetup(4);//maf
-
-						/*c.Game.getMatchSignup().addToRoleSetup(7);//GF
-						c.Game.getMatchSignup().addToRoleSetup(4);//mafiaso*/
+						//c.Game.getMatchSignup().addToRoleSetup(4);//maf
+						//c.Game.getMatchSignup().addToRoleSetup(4);//maf
 						c.Game.getMatchSignup().addToRoleSetup(2);//sheriff
 						c.Game.getMatchSignup().addToRoleSetup("TOWN", "PROTECTIVE");
 						c.Game.getMatchSignup().addToRoleSetup(1);//cit
 						c.Game.getMatchSignup().addToRoleSetup(1);//cit
-						c.Game.getMatchSignup().addToRoleSetup(1);//cit*/
-						c.Game.getMatchSignup().addToRoleSetup(5);//electro
-					c.Game.getMatchSignup().postMatch();
+						//c.Game.getMatchSignup().addToRoleSetup(1);//cit
+						//c.Game.getMatchSignup().addToRoleSetup(5);//electro
+					c.Game.getMatchSignup().postSetup();
+				}
+			}
+		}
+	}
+	public static void _addtosignup(Character c, String phrase, byte[] data) {
+		String[] ephrase = phrase.split(" ", 2);
+		if(ephrase.length > 1){
+			if(StringFunctions.isInteger(ephrase[0])){
+				if(c.Game.getMatchSignup() != null){
+					c.Game.getMatchSignup().addUserSignup(Integer.parseInt(ephrase[0]), ephrase[1]);
+					c.Game.Base.Console.debug("Adding "+ephrase[0]+" "+ephrase[1]+" to signups");
 				}
 			}
 		}
@@ -229,10 +242,10 @@ public class LobbyCmd {
 			c.Game.Base.Console.warning("EID: "+entry.getValue().getEID()+" | Name: "+entry.getValue().getName()+" | Players: "+entry.getValue().getNumChars());// + "/" + entry.getValue();
 		}
 	}
-	public static void _editpost(Character c, String phrase, byte[] data) {
+	public static void _sendpm(Character c, String phrase, byte[] data) {
 		// works -> c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "this is just a test..."); can't use a '
 		try{
-			c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "You asked for it, you got. <br> Well...not much to say, Im a after all.");
+			c.Game.Base.ForumAPI.pm_SendNew("Apocist", "Test Request", "hi \n there");
 		}catch (VBulletinAPIException e) {}
 		return;
 	}
@@ -242,14 +255,8 @@ public class LobbyCmd {
 		int[] threadMsg = new int[2];
 		boolean success = false;
 		try {
-			threadMsg = c.Game.Base.ForumAPI.thread_New("292", "This is just a test, do not panic", phrase);
+			threadMsg = c.Game.Base.ForumAPI.thread_New(phrase, "This is just a test, do not panic", "just a test thread", false);
 			success = true;
-		} catch (InvalidAPISignature e) {
-			e.printStackTrace();
-		} catch (NoPermissionLoggedout e) {
-			e.printStackTrace();
-		} catch (InvalidAccessToken e) {
-			e.printStackTrace();
 		} catch (VBulletinAPIException e) {
 			e.printStackTrace();
 		}
@@ -263,25 +270,74 @@ public class LobbyCmd {
 		//292 is Simple OnGoing
 		return;
 	}
-	public static void _newpost(Character c, String phrase, byte[] data) {
+	public static void _closethread(Character c, String phrase, byte[] data) {
 		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
-		c.Game.Base.Console.debug("Attempting new post");
-		int[] postMsg = new int[2];
+		c.Game.Base.Console.debug("Attempting Thread close");
 		boolean success = false;
 		try {
-			postMsg = c.Game.Base.ForumAPI.post_New("26877", phrase);
-			success = true;
+			success = c.Game.Base.ForumAPI.thread_Close(phrase);
 		}
 		catch (VBulletinAPIException e) {}
 		if(success){
-			c.Game.Base.Console.debug("New Reply successful...Post id is "+postMsg[1]);
+			c.Game.Base.Console.debug("Thread close successful...");
 		}
 		else{
-			c.Game.Base.Console.debug("New Reply failed... : ");
+			c.Game.Base.Console.debug("Thread close failed... : ");
 		}
 		return;
 	}
-	public static void _parsepms(Character c, String phrase, byte[] data) {
+	public static void _deletethread(Character c, String phrase, byte[] data) {
+		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
+		c.Game.Base.Console.debug("Attempting Thread delete");
+		boolean success = false;
+		try {
+			success = c.Game.Base.ForumAPI.thread_Delete(phrase);
+		}
+		catch (VBulletinAPIException e) {}
+		if(success){
+			c.Game.Base.Console.debug("Thread delete successful...");
+		}
+		else{
+			c.Game.Base.Console.debug("Thread delete failed... : ");
+		}
+		return;
+	}
+	public static void _threadview(Character c, String phrase, byte[] data) {
+		//This is just a test of the Emergency Broadcast System. There is no danger, do not be alarmed. Momentarily agents with break through the windows adjacent to you It is advised that you heed their instructions to the best of your abilities to avoid being shot in the face.<br><br> That is all.
+		c.Game.Base.Console.debug("Attempting Thread view");
+		boolean success = false;
+		Post post = null;
+		try {
+			post = c.Game.Base.ForumAPI.thread_ViewLastPost(27497);//just the last post
+			if(post != null){
+				success = true;
+			}
+		}
+		catch (VBulletinAPIException e) {}
+		if(success){
+			c.Game.Base.Console.debug("Thread view hopfully successful...last post is "+post.postid);
+			if(post.userid == Constants.GODFATHER_ID){
+				c.Game.Base.Console.debug("Post from the Godfather...");
+				Pattern p = Pattern.compile("^(.*?) has been lynched! Stand by for the host's review and day-end post!", Pattern.DOTALL);
+			    Matcher m = p.matcher(post.message_bbcode);
+			    if (m.find()){
+			        String lynchedName=m.group(1);
+			        Pattern p2 = Pattern.compile("\\[url='http://www.sc2mafia.com/forum/member.php/([1-9][0-9]*)'\\]"+lynchedName+"\\[/url\\]", Pattern.DOTALL);
+				    Matcher m2 = p2.matcher(post.message_bbcode);
+				    if (m2.find()){
+				    	String lynchedId=m2.group(1);
+				    	c.Game.Base.Console.debug(lynchedName+" was lynched! Userid is "+lynchedId);
+				    }
+			    }
+			}
+		}
+		else{
+			c.Game.Base.Console.debug("Thread view failed... : ");
+		}
+		return;
+	}
+
+	public static void _hourlychecks(Character c, String phrase, byte[] data) {
 		c.Game.hourlyChecks();
 		return;
 	}

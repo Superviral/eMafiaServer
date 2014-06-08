@@ -4,6 +4,7 @@ Copyright (C) 2012  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes;
 
 import com.inverseinnovations.VBulletinAPI.Exception.*;
+import com.inverseinnovations.eMafiaServer.includes.Constants;
 
 /**
  * Provides list of all commands a Character may call when inside a Lobby<br>
@@ -20,36 +21,51 @@ public class ForumCmd {
 	public static void sign(final Game Game, int forumId, String username, String phrase) {
 		Game.Base.Console.debug(username+" signing");
 		if(Game.getMatchSignup() != null){
-			Game.getMatchSignup().addUserSignup(forumId, username);
-			try {
-				Game.Base.ForumAPI.pm_SendNew(username, Game.getMatchSignup().getName()+" Signups", "You've signed up for "+Game.getMatchSignup().getName()+"!<BR>If you feel you can't participate in the future, please -withdraw.<BR>Thanks for helping out.");
-			}catch (VBulletinAPIException e) {}
+			if(Game.getMatchSignup().getPhaseMain() <= Constants.PHASEMAIN_STARTING){//only if in starting/signup phase
+				Game.getMatchSignup().addUserSignup(forumId, username);
+				try {
+					Game.Base.ForumAPI.pm_SendNew(username, Game.getMatchSignup().getName()+" Signups", "You have signed up for "+Game.getMatchSignup().getName()+"!\n" +
+								"If you feel you cannot participate in the future, please -withdraw.\n" +
+								"Thanks for helping out.");
+				}catch (VBulletinAPIException e) {}
+			}
 		}
 	}
 	public static void reserve(final Game Game, int forumId, String username, String phrase) {
 		Game.Base.Console.debug(username+" reserving");
 		if(Game.getMatchSignup() != null){
-			Game.getMatchSignup().addUserReserve(forumId, username);
-			try{
-				Game.Base.ForumAPI.pm_SendNew(username, Game.getMatchSignup().getName()+" Signups", "You've reserved a spot for "+Game.getMatchSignup().getName()+"!<BR>If a player is removed from the game, or not enough players sign up, you'll be notified as being a replacement.<BR>If you feel you can't participate in the future, please -withdraw.<BR>Thanks for helping out.");
-			}catch (VBulletinAPIException e) {}
+			if(Game.getMatchSignup().getPhaseMain() <= Constants.PHASEMAIN_STARTING){//only if in starting/signup phase
+				Game.getMatchSignup().addUserReserve(forumId, username);
+				try{
+					Game.Base.ForumAPI.pm_SendNew(username, Game.getMatchSignup().getName()+" Signups", "You have reserved a spot for "+Game.getMatchSignup().getName()+"!\n" +
+								"If a player is removed from the game, or not enough players sign up, you will be notified as being a replacement.\n" +
+								"If you feel you cannot participate in the future, please -withdraw.\n" +
+								"Thanks for helping out.");
+				}catch (VBulletinAPIException e) {}
+			}
 		}
 	}
 	public static void withdraw(final Game Game, int forumId, String username, String phrase) {
 		Game.Base.Console.debug(username+" withdrawing");
+		//TODO detect if withdrawing from signup or ongoing
 		if(Game.getMatchSignup() != null){
-			Game.getMatchSignup().removeUserSignup(forumId);
-			Game.getMatchSignup().removeUserReserve(forumId);
-			try{
-				Game.Base.ForumAPI.pm_SendNew(username, Game.getMatchSignup().getName()+" Signups", "You've withdrawn from "+Game.getMatchSignup().getName()+"!<BR>Thanks for helping out.");
-			}catch (VBulletinAPIException e) {}
+				Game.getMatchSignup().removeUserSignup(forumId);
+				Game.getMatchSignup().removeUserReserve(forumId);
+				try{
+					Game.Base.ForumAPI.pm_SendNew(username, Game.getMatchSignup().getName()+" Signups", "You have withdrawn from "+Game.getMatchSignup().getName()+"!\n" +
+								"Thanks for helping out.");
+				}catch (VBulletinAPIException e) {}
 		}
 	}
 
 	public static void unknown_command(final Game Game, int forumId, String username, String phrase) {
 		Game.Base.Console.debug(username+" unknown command: "+phrase);
 		try{
-			Game.Base.ForumAPI.pm_SendNew(username, "Unknown Command", "<CENTER>The command you sent is unknown and cannot be processed. command in question:<CENTER><BR><BR>"+phrase+"<BR><BR><CENTER>Please be sure not to use text formatting at anytime.<CENTER>");
+			Game.Base.ForumAPI.pm_SendNew(username, "Unknown Command", "[CENTER]The command you sent is unknown and cannot be processed. command in question:[/CENTER]\n" +
+						"\n" +
+						phrase+"\n" +
+						"\n" +
+						"[CENTER]Please be sure not to use text formatting at anytime.[/CENTER]");
 		}catch (VBulletinAPIException e) {}
 	}
 }

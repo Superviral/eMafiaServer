@@ -426,8 +426,8 @@ public class StringFunctions {
 	 * @param hexcolor 6 digit Hex code of color
 	 * @param string String to colorize
 	 */
-	public static String HTMLColor(String hexcolor,String string){
-		return "<font color=\"#"+hexcolor+"\">"+string+"</font>";
+	public static String bbColor(String hexcolor,String string){
+		return "[color=#"+hexcolor+"]"+string+"[/color]";
 	}
 	/**
 	 * Returns a random Character

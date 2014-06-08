@@ -24,10 +24,11 @@ public class Constants {
 
 	//Match
 	public static final int PHASEMAIN_SETUP = 0;
-	public static final int PHASEMAIN_NAMING = 1;//realtime mafia
-	public static final int PHASEMAIN_SIGNUP = 1;//forum mafia
-	public static final int PHASEMAIN_INPLAY = 2;
-	public static final int PHASEMAIN_ENDGAME = 3;
+	public static final int PHASEMAIN_SIGNUP = 1;//forum mafia only
+	public static final int PHASEMAIN_NAMING = 2;//realtime mafia only
+	public static final int PHASEMAIN_STARTING = 3;//forum mafia only
+	public static final int PHASEMAIN_INPLAY = 4;
+	public static final int PHASEMAIN_ENDGAME = 5;
 
 	public static final int PHASEDAYTYPE_DISCUSSION = 1;
 	public static final int PHASEDAYTYPE_NORMAL = 2;
@@ -37,6 +38,10 @@ public class Constants {
 	public static final int PHASEDAYTYPE_NIGHT = 8;
 
 	//Forum
-	public static final int FORUM_SIGNUPS = 104;
-	public static final int FORUM_ONGOING = 292;
+	public static final int FORUM_SIMPLE_SIGNUPS = 104;
+	public static final int FORUM_SIMPLE_ONGOING = 292;
+	public static final int GODFATHER_ID = 8070;
+
+	//misc
+	public static final int DELAY_BETWEEN_PMS = 5;//secs
 }

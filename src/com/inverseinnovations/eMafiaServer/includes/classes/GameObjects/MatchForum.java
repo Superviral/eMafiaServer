@@ -5,6 +5,7 @@ package com.inverseinnovations.eMafiaServer.includes.classes.GameObjects;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -13,6 +14,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -22,8 +26,10 @@ import com.inverseinnovations.eMafiaServer.includes.scriptProcess;
 import com.inverseinnovations.eMafiaServer.includes.classes.Game;
 import com.inverseinnovations.eMafiaServer.includes.classes.ERS.MatchForumERS;
 import com.inverseinnovations.VBulletinAPI.Exception.*;
+import com.inverseinnovations.VBulletinAPI.VBulletinAPI.Post;
 
-public class MatchForum extends GameObject{
+public class MatchForum extends GameObject implements java.io.Serializable{
+	private static final long serialVersionUID = 1L;
 	public Game Game;
 	private int signupThreadId;
 	private int signupPostId;
@@ -36,13 +42,14 @@ public class MatchForum extends GameObject{
 	private Map<Integer, Players> signups = new LinkedHashMap<Integer, Players>();
 	private Map<Integer, Players> reserves = new LinkedHashMap<Integer, Players>();
 	private Map<String, Integer> settings = new LinkedHashMap<String, Integer>();
+	private long timer;//holds the time til advancePhase
 	/**0 = setup/1 = naming/2 = inplay/3 = endgame*/
-	private int phaseMain = 0;
+	private int phaseMain = Constants.PHASEMAIN_SETUP;
 	/**Which day/night it is(only should apply is PhaseSetup is "inplay")*/
 	private int phaseDay = 1;
 	/**1=discuss/2=normal/3=trialplead/4=trialvote/6=lynch/8=night*/
 	private int phaseDayType;
-	private Players[] players;//players[playernum]=[eID,inGameName,roleNumber]
+	private Players[] players;//players[playernum]=[fID,inGameName,roleNumber]
 	private Players[] graveyard;
 	private RoleForum[] roles;
 	private ChatGroup chatGroup = new ChatGroup();
@@ -60,14 +67,14 @@ public class MatchForum extends GameObject{
 		//Game.setMatchForum(this);
 
 		this.settings.put("host_id", 0);
-		this.settings.put("max_chars", 4);//the max num of chars for a game, 15 defualt
-		this.settings.put("start_game_at", 1);//0=day/1=day no lynch/2=night
-		this.settings.put("day_length", 30);//# in secs. 60-600 default 60
-		this.settings.put("night_length", 6);//30-120 default 30
-		this.settings.put("discuss_length", 6);//30-180 default 30
+		this.settings.put("max_chars", 4);//the max num of chars for a game, 15 defualt, this wouldnt matter later
+		this.settings.put("start_game_at", 0);//0=day/1=day no lynch/2=night
+		this.settings.put("day_length", 24);//# in hours. default 24
+		this.settings.put("night_length", 24);// default 24
+		this.settings.put("discuss_length", 1);//default 2
 
 		//misc
-		this.settings.put("naming_length", 10);//# in secs to choose a name
+		//this.settings.put("naming_length", 10);//# in secs to choose a name
 
 		//unimplemented settings
 		this.settings.put("last_will", 0);//0=no/1=show last will
@@ -87,10 +94,10 @@ public class MatchForum extends GameObject{
 	/**
 	 * Releases the Match to public signups
 	 */
-	public void postMatch(){
+	public void postSetup(){
 		//role setup
 		String setup = "";
-		for(RolesOrig role : this.getRoleSetup()){
+		for(RolesOrig role : getRoleSetup()){
 			if (role != null){
 				if(role.eID > 0){//is a pure role
 					RoleForum pureRole = Game.Base.MySql.grabRoleForum(role.eID);
@@ -99,7 +106,7 @@ public class MatchForum extends GameObject{
 						if(pureRole.getAffiliation().equals("TOWN")){color = "00FF00";}else if(pureRole.getAffiliation().equals("MAFIA")){color = "FF0000";}
 						//setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"]"+pureRole.getName()+"[/URL]<BR>";
 						//setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"][COLOR="+color+"]"+pureRole.getName()+"[/COLOR][/URL]<BR>";
-						setup += "[COLOR="+color+"]"+pureRole.getName()+"[/COLOR]<BR>";
+						setup += "[COLOR="+color+"]"+pureRole.getName()+"[/COLOR]\n";
 						//setup += pureRole.getName()+"<BR>";
 					}
 				}
@@ -107,7 +114,7 @@ public class MatchForum extends GameObject{
 					String color = "A9A9A9";
 					if(role.affiliation.equals("TOWN")){color = "00FF00";}else if(role.affiliation.equals("MAFIA")){color = "FF0000";}
 					//setup += role.affiliation+" "+role.category[0]+"<BR>";
-					setup += "[COLOR="+color+"]"+role.affiliation+" "+role.category[0]+"[/COLOR]<BR>";
+					setup += "[COLOR="+color+"]"+role.affiliation+" "+role.category[0]+"[/COLOR]\n";
 				}
 			}
 		}
@@ -118,7 +125,7 @@ public class MatchForum extends GameObject{
 				String color = "A9A9A9";
 				if(role.getAffiliation().equals("TOWN")){color = "00FF00";}else if(role.getAffiliation().equals("MAFIA")){color = "FF0000";}
 				//possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"]"+role.getName()+"[/URL]<BR>";
-				possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"][COLOR="+color+"]"+role.getName()+"[/COLOR][/URL]<BR>";
+				possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"][COLOR="+color+"]"+role.getName()+"[/COLOR][/URL]\n";
 				//possible += role.getName()+"<BR>";
 			}
 		}
@@ -128,15 +135,15 @@ public class MatchForum extends GameObject{
 			order += action+"<BR>";
 		}
 		String message =
-				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=6]"+getName()+"[/SIZE][/COLOR]<BR>" +
-				"<BR>" +
-				"[COLOR=#DDA0DD][SIZE=5]Setup :[/SIZE][/COLOR]<BR>" +
-				"<BR>" +
+				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=6]"+getName()+"[/SIZE][/COLOR]\n" +
+				"\n" +
+				"[COLOR=#DDA0DD][SIZE=5]Setup :[/SIZE][/COLOR]\n" +
+				"\n" +
 				setup + //SETUP HERE
-				"<BR>" +
+				"\n" +
 				"[COLOR=#DDA0DD][SIZE=5]Order of Operations :[/SIZE][/COLOR][SPOILER=]" +
 				order + //ORDER OF OP HERE
-				"[/SPOILER]<BR>" +
+				"[/SPOILER]\n" +
 				"[/CENTER][/B][/COLOR]";
 
 		boolean nextPost = false;
@@ -144,7 +151,7 @@ public class MatchForum extends GameObject{
 		int[] postMsg = new int[2];
 		boolean success = false;
 		try {
-			threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIGNUPS, getName()+" Signups", message);
+			threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIMPLE_SIGNUPS, getName()+" Signups", message);
 			success = true;
 		}
 		catch (VBulletinAPIException e) {}
@@ -163,23 +170,23 @@ public class MatchForum extends GameObject{
 					"[COLOR=#AFEEEE][B][CENTER]" +
 					"[COLOR=#DDA0DD][SIZE=5]Win Conditions :[/SIZE][/COLOR][SPOILER=]" +
 					"Win Conditions ToDo" + //WIN CONS HERE
-					"[/SPOILER]<BR>" +
+					"[/SPOILER]\n" +
 					"[SIZE=5][COLOR=#DDA0DD]Possible Roles :[/COLOR][/SIZE][SPOILER=]" +
 					possible + //POSSIBLE ROLES HERE
-					"[/SPOILER]<BR>" +
-					"[COLOR=#DDA0DD][SIZE=5]Rules :[/SIZE][/COLOR]<BR>" +
-					"<BR>" +
-					"Vote using [Vote] tags.<BR>" +
-					"<BR>" +
-					"You can post pictures, though follow the forum picture rule.<BR>" +
-					"Videos are only allowed when not in autoplay.<BR>" +
-					"<BR>" +
-					"Show activity with a minimum of 3 constructive or non-forced posts.<BR>" +
-					"Lurking is discouraged. If you are forced inactive, please -withdraw from the game so another may take your place.<BR>" +
-					"<BR>" +
-					"No outside of game communication, other than provided chat channels.(Exception for night chats at this time.)<BR>" +
-					"No editing or deleting of posts.<BR>" +
-					"No sharing of night chats.<BR>" +
+					"[/SPOILER]\n" +
+					"[COLOR=#DDA0DD][SIZE=5]Rules :[/SIZE][/COLOR]\n" +
+					"\n" +
+					"Vote using [Vote] tags.\n" +
+					"\n" +
+					"You can post pictures, though follow the forum picture rule.\n" +
+					"Videos are only allowed when not in autoplay.\n" +
+					"\n" +
+					"Show activity with a minimum of 3 constructive or non-forced posts.\n" +
+					"Lurking is discouraged. If you are forced inactive, please -withdraw from the game so another may take your place.\n" +
+					"\n" +
+					"No outside of game communication, other than provided chat channels.(Exception for night chats at this time.)\n" +
+					"No editing or deleting of posts.\n" +
+					"No sharing of night chats.\n" +
 					"[/CENTER][/B][/COLOR]";
 
 			success = false;
@@ -209,7 +216,7 @@ public class MatchForum extends GameObject{
 		int loop = 1;
 		for(Players player : getSignupList()){
 			if (player != null){
-				signs += loop+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]<BR>";
+				signs += loop+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]\n";
 				loop++;
 			}
 		}
@@ -218,20 +225,20 @@ public class MatchForum extends GameObject{
 		loop = 1;
 		for(Players player : getReserveList()){
 			if (player != null){
-				reserves += loop+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]<BR>";
+				reserves += loop+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]\n";
 				loop++;
 			}
 		}
 		if(loop == 1){reserves = "No one has reserved<BR>";}
 
 		String message =
-				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=5]Sign Up List :[/SIZE][/COLOR]<BR>" +
+				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=5]Sign Up List :[/SIZE][/COLOR]\n" +
 				signs + //SETUP HERE
-				"<BR>" +
-				"[COLOR=#DDA0DD][SIZE=5]Reserve List :[/SIZE][/COLOR]<BR>" +
+				"\n" +
+				"[COLOR=#DDA0DD][SIZE=5]Reserve List :[/SIZE][/COLOR]\n" +
 				reserves + //ORDER OF OP HERE
-				"<BR>" +
-				"To sign up for this match PM the message [COLOR=#FF0000]-sign[/COLOR] or [COLOR=#FF0000]-reserve[/COLOR] to me!<BR>" +
+				"\n" +
+				"To sign up for this match PM the message [COLOR=#FF0000]-sign[/COLOR] or [COLOR=#FF0000]-reserve[/COLOR] to me!\n" +
 				"This list will update every hour(may not during testing if offline)" +
 				"[/CENTER][/B][/COLOR]";
 		if(edit){
@@ -249,7 +256,7 @@ public class MatchForum extends GameObject{
 				}
 			}
 		}
-		else{
+		else{//if a new signup
 			int[] threadMsg = new int[2];
 			boolean success = false;
 			try{
@@ -259,10 +266,90 @@ public class MatchForum extends GameObject{
 			catch (VBulletinAPIException e) {e.printStackTrace();}
 			if(success){
 				Game.Base.Console.debug("Post Signup successful... thread ID is "+threadMsg[0]+" post id is "+threadMsg[1]);
+				setPhaseMain(Constants.PHASEMAIN_SIGNUP);
 				setSignupSignId(threadMsg[1]);
 			}
 			else{
 				Game.Base.Console.debug("Post Signup failed... : ");
+			}
+		}
+	}
+	public void postNewDay(boolean edit){//TODO announce when day ends
+		//edit is if making a new thread or not
+		//role setup
+		String setup = "";
+		for(RolesOrig role : this.getRoleSetup()){
+			if (role != null){
+				if(role.eID > 0){//is a pure role
+					RoleForum pureRole = Game.Base.MySql.grabRoleForum(role.eID);
+					if(pureRole !=null){//[COLOR=#FF0000]
+						String color = "A9A9A9";
+						if(pureRole.getAffiliation().equals("TOWN")){color = "00FF00";}else if(pureRole.getAffiliation().equals("MAFIA")){color = "FF0000";}
+						setup += "[COLOR="+color+"]"+pureRole.getName()+"[/COLOR]\n";
+					}
+				}
+				else{//is Category
+					String color = "A9A9A9";
+					if(role.affiliation.equals("TOWN")){color = "00FF00";}else if(role.affiliation.equals("MAFIA")){color = "FF0000";}
+					setup += "[COLOR="+color+"]"+role.affiliation+" "+role.category[0]+"[/COLOR]\n";
+				}
+			}
+		}
+		String players = "";
+		for(Players player : getAliveList()){
+			if (player != null){
+				players += player.getPlayerNumber()+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]\n";
+			}
+		}
+		String dead = "";
+		if(!getDeadList().isEmpty()){
+			dead = "[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=5]Graveyard :[/SIZE][/B][/COLOR]\n";
+			for(Players player : getDeadList()){
+				if (player != null){
+					players += player.getPlayerNumber()+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]\n";//TODO need to show death reason
+				}
+			}
+			dead +="<BR>";
+		}
+		String message =
+				"[COLOR=#AFEEEE][CENTER][COLOR=#DDA0DD][B][SIZE=6]"+getName()+" Day "+getPhaseDay()+"[/SIZE][/B][/COLOR]<BR>" +
+				"[URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getSignupThreadId()+"]Setup Thread[/URL]\n" +//TODO make into link
+				"[COLOR=#DDA0DD][SIZE=5]Setup :[/SIZE][/COLOR]\n" +
+				"\n" +
+				setup + //SETUP HERE
+				"\n" +
+				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=5]Alive Players :[/SIZE][/COLOR]\n" +
+				players + //PLAYERS HERE
+				"\n" +
+				dead + //GRAVEYARD HERE
+				"[B][l]"+requiredVotes()+"[/l]" +
+				"[/B][/CENTER][/COLOR]";
+
+		if(edit){//after night, use same thread
+			boolean success = false;
+			try {
+				Game.Base.ForumAPI.post_New(getMatchThreadId(), message);
+				success = true;
+			}
+			catch (VBulletinAPIException e) {}
+			if(success){Game.Base.Console.debug("New Day successful start(added post)");}
+		}
+		else{//start new thread(first day)
+			int[] threadMsg = new int[2];
+			boolean success = false;
+			try {
+				threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIMPLE_ONGOING, getName()+" Day "+getPhaseDay(), message);
+				success = true;
+			}
+			catch (VBulletinAPIException e) {}
+			if(success){
+				setMatchThreadId(threadMsg[0]);
+				setMatchPostId(threadMsg[1]);
+				Game.Base.Console.debug("New Day successful... thread ID is "+threadMsg[0]+" post id is "+threadMsg[1]);
+				//nextPost = true;
+			}
+			else{
+				Game.Base.Console.debug("New Day failed... : "+threadMsg);
 			}
 		}
 	}
@@ -545,6 +632,18 @@ public class MatchForum extends GameObject{
 			}
 		}
 		return list;
+	}
+	/**Returns the assigned player number when providing a forum user's id
+	 * @param userid
+	 * @return 0 if not found
+	 */
+	public int getPlayerNum(int userid){
+		for(Players player: getPlayerList()){
+			if(player.fID == userid){
+				return player.playerNumber;
+			}
+		}
+		return 0;
 	}
 	/**Returns Player whether alive or not
 	 * @param playerNum
@@ -981,18 +1080,22 @@ public class MatchForum extends GameObject{
 	 */
 	public boolean sendMatch(String message){
 		boolean success = false;
-		try {
-			Game.Base.ForumAPI.post_New(getMatchThreadId(), message);
-			success = true;
+		if(getMatchThreadId() > 0){
+			try {
+				Game.Base.ForumAPI.post_New(getMatchThreadId(), message);
+				success = true;
+			}
+			catch (VBulletinAPIException e) {}
 		}
-		catch (VBulletinAPIException e) {}
 		return success;
 	}
 	/** Edits the orginal Match post */
 	public void editMatch(String message){
-		try {
-			Game.Base.ForumAPI.post_Edit(getMatchPostId(), message);
-		}catch (VBulletinAPIException e) {}
+		if(getMatchThreadId() > 0){
+			try {
+				Game.Base.ForumAPI.post_Edit(getMatchPostId(), message);
+			}catch (VBulletinAPIException e) {}
+		}
 	}
 	/** Send PM to this player */
 	public void sendToPlayerNum(int playerNum, String title, String message){
@@ -1004,6 +1107,9 @@ public class MatchForum extends GameObject{
 			catch (Exception e){
 				Game.Base.Console.warning("Failed to send to char "+player.getFID()+" : "+player.getName()+" playerNum "+playerNum+" : "+e.getMessage());
 			}
+			try {//delay between PMs
+				TimeUnit.SECONDS.sleep(Constants.DELAY_BETWEEN_PMS);
+			}catch (InterruptedException e) {e.printStackTrace();}
 		}
 	}
 	/**
@@ -1039,6 +1145,42 @@ public class MatchForum extends GameObject{
 //////////////////////////
 ///////////Other//////////
 //////////////////////////
+	/**Checks if a player has been voted to be lynched, then lynches them.*/
+	public void checkLynch(){
+		if(getPhaseMain() <= Constants.PHASEMAIN_INPLAY){//if playing
+			//check for lynches
+			boolean success = false;
+			Post post = null;
+			try {
+				post = Game.Base.ForumAPI.thread_ViewLastPost(getMatchThreadId());//just the last post
+				if(post != null){
+					success = true;
+				}
+			}
+			catch (VBulletinAPIException e) {}
+			if(success){
+				Game.Base.Console.debug("checking for lynch");
+				if(post.userid == Constants.GODFATHER_ID){
+					Pattern p = Pattern.compile("^(.*?) has been lynched! Stand by for the host's review and day-end post!", Pattern.DOTALL);
+				    Matcher m = p.matcher(post.message_bbcode);
+				    if (m.find()){
+				        String lynchedName=m.group(1);
+				        Pattern p2 = Pattern.compile("\\[url='http://www.sc2mafia.com/forum/member.php/([1-9][0-9]*)'\\]"+lynchedName+"\\[/url\\]", Pattern.DOTALL);
+					    Matcher m2 = p2.matcher(post.message_bbcode);
+					    if (m2.find()){
+					    	String lynchedId=m2.group(1);
+					    	Game.Base.Console.debug(lynchedName+" was lynched! Userid is "+lynchedId);
+					    	if(StringFunctions.isInteger(lynchedId)){
+					    		//TODO do lynch stuff here
+					    		int id = Integer.parseInt(lynchedId);
+						    	beginLynch(getPlayerNum(id));
+					    	}
+					    }
+				    }
+				}
+			}
+		}
+	}
 	/**Returns the specified Team by name
 	 * @param name
 	 * @return null if non existant
@@ -1060,7 +1202,7 @@ public class MatchForum extends GameObject{
 	}
 	/** Returns number of votes required for democracy to kick in */
  	public int requiredVotes(){
-		int required = (int) Math.ceil(getNumPlayersAlive() / 2)+1;
+		int required = (int) Math.ceil(getNumPlayersAlive() / 1.99d);
 		/*if(required == (getNumPlayersAlive() / 2)){
 			required++;
 		}*/
@@ -1160,7 +1302,7 @@ public class MatchForum extends GameObject{
 		}
 	}
 	/** Sends player to graveyard */
-	public void killPlayer(int playerNum){
+	public String killPlayer(int playerNum){
 		String name = getPlayer(playerNum).getName();
 		String deathDesc = "";
 		if(!getPlayerRole(playerNum).deathDesc.isEmpty()){
@@ -1172,9 +1314,11 @@ public class MatchForum extends GameObject{
 		else{
 			deathDesc = "randomly and unknowingly slaughtered";
 		}
-		this.sendMatch(
-				name+" was "+deathDesc+"<BR>"+
-				name+"'s role was "+getPlayerRole(playerNum).getName());
+		/*this.sendMatch(
+				name+" was "+deathDesc+"\n"+
+				name+"'s role was "+getPlayerRole(playerNum).getName());*/
+		String theReturn = name+" was "+deathDesc+"\n"+
+				name+"'s role was "+getPlayerRole(playerNum).getName();
 		getPlayerRole(playerNum).setIsAlive(false);
 		doScriptProcess(playerNum,"onDeath");
 		int nextSlot = 0;
@@ -1184,6 +1328,12 @@ public class MatchForum extends GameObject{
 		this.graveyard[nextSlot] = getPlayer(playerNum);
 		//getRole(this.graveyard[nextSlot].getRoleNumber()).deathTypes.add(deathType);
 		this.players[playerNum] = null;
+		try {
+			Game.Base.ForumAPI.pm_SendNew(this.getPlayer(playerNum).getName(), "You are Dead", "Enough said, good game");
+			//TODO time delay?
+		} catch (VBulletinAPIException e) {}
+		//test
+		return theReturn;
 	}
 	/** Sends player to graveyard */
 	public void killPlayer(RoleForum role){
@@ -1284,18 +1434,50 @@ public class MatchForum extends GameObject{
 		}
 		return false;
 	}
-	/** Starts timer to start game with current settings, only in setup mode */
-	public void gameStart(){
-		//if(getPhaseMain() == Constants.PHASEMAIN_SETUP && !isAdvancePhaseTimer()){
-			if(this.roleSetup.size() == getNumChars()){
-				//this.addAdvancePhaseTimer(10);
-				//this.send(CmdCompile.chatScreen("Game starting in 10 seconds."));
-				//this.send(CmdCompile.timerStart(10));
+	/** Sets game to STARTING mode if it is currently in SIGNUP mode and has enough players.
+	 * If already STARTING and has enough players still, the match will begin
+	 * @return true when match actually starts*/
+	public boolean gameStart(){
+		Game.Base.Console.debug("doing gameStart");
+		boolean theReturn = false;
+		if(getPhaseMain() == Constants.PHASEMAIN_SIGNUP){
+			if(getSignupList().size() >= this.roleSetup.size()){
+				Game.Base.Console.debug("enough players...make STARTING");
+				setPhaseMain(Constants.PHASEMAIN_STARTING);
+				sendSignup("The match will begin in one hour.\n" +
+							"Be sure to signup by then for a chance to join.");
+			}
+			else{Game.Base.Console.debug("not enough players, leave alone");}
+		}
+		else if(getPhaseMain() == Constants.PHASEMAIN_STARTING){
+			if(getSignupList().size() >= this.roleSetup.size()){
+				Game.Base.Console.debug("In starting - still enough players...start game");
+				advancePhase();//start match
+				sendSignup("The match started. Users may still -reserve a spot to fill in for any leaving players.\n" +
+							"\n" +
+							"Please use to link below to follow the game:\n" +
+							"[URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getMatchThreadId()+"]Match Thread[/URL]");
+				//tell each of their role cards
+				//TODO send commands and details of the role card
+				for(int i = 1; i < this.players.length; i++){//tell each of their roles
+					this.sendToPlayerNum(i, getName(),
+							getPlayer(i).inGameName+", you were selected as a participant in "+getName()+".\n" +
+							"\n"+
+							"Your role is "+StringFunctions.bbColor("00FF00", getPlayerRole(i).getName())+"\n" +
+							"\n" +
+							"Be sure post your greetings on the [URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getMatchThreadId()+"]Match Thread[/URL]"
+
+						);//TODO teammates can see other teammates
+				}
+				theReturn = true;
 			}
 			else{
-				//this.send(CmdCompile.chatScreen("<b><font color=\"FF0000\">Game has "+getNumChars()+" players and "+this.roleSetup.size()+" roles. Unable to start.</font></b>"));
+				Game.Base.Console.debug("STARTING - players must have left, dont start");
+				sendSignup("The match has been delayed due to a player withdrawing and will resume when enough players signup.");
+				setPhaseMain(Constants.PHASEMAIN_SIGNUP);
 			}
-		//}
+		}
+		return theReturn;
 	}
 	/** Deletes the gameStart() timer when in setup mode */
 	public void gameCancel(){
@@ -1306,13 +1488,44 @@ public class MatchForum extends GameObject{
 			//this.send(CmdCompile.timerStop());
 		//}
 	}
+	/**Sets the andvancePhase Timer to this value(will perform advancePhase at this time)
+	 * @param time
+	 */
+	public void setTimer(long time){
+		timer = time;
+	}
+	/**Sets the andvancePhase Timer to this value(will perform advancePhase at this time)
+	 * @param time
+	 */
+	public void setTimer(java.util.Date time){
+		setTimer(time.getTime());
+	}
+	/**Sets the andvancePhase Timer to this value(will perform advancePhase at this time)
+	 * @param time
+	 */
+	public void setTimer(Calendar time){
+		timer = time.getTimeInMillis();
+	}
+	/**
+	 * True if Timer has been and advancePhase if so
+	 * @return false if timer not set
+	 */
+	public boolean isTimerUp(){
+		if(timer != 0){
+			if(Calendar.getInstance().getTimeInMillis() >= timer){
+				advancePhase();
+				return true;
+			}
+		}
+		return false;
+	}
 //////////////////////////
 //////////Phases//////////
 //////////////////////////
 	/** Changes the Match object's Main phase<br>
 	 * @param phase 0 = setup/1 = naming/2 = inplay/3 = endgame
 	 */
-	public void setPhaseMain(int phase){
+ 	public void setPhaseMain(int phase){
 		this.phaseMain = phase;
 	}
 	/**
@@ -1359,35 +1572,17 @@ public class MatchForum extends GameObject{
 	 */
 	public void advancePhase(){
 		switch(getPhaseMain()){
-		case Constants.PHASEMAIN_SETUP://setup ending
+		case Constants.PHASEMAIN_STARTING://signup ending
 			if(assignRoles()){//give random roles
-				beginNaming();//change to naming phase
+				doScriptProcess("onStartup");//should this happen AFTER announce each player's role?
+				//game startings
+				if(getSetting("start_game_at")==0) beginDay();//Start day sequence
+				else if(getSetting("start_game_at")==1) beginDiscuss();//Start discuss sequence
+				else if(getSetting("start_game_at")==2) beginNight();//Start night sequence
 			}
 			else{
 				setPhaseMain(Constants.PHASEMAIN_SETUP);//retturns to setup
 			}
-			break;
-		case Constants.PHASEMAIN_NAMING://naming ending
-			//this.send(CmdCompile.closeLayer("nameSelection"));//close name selection window(if open)
-			for(int i = 1; i < this.players.length; i++){//Give names to the nameless
-				if(this.players[i].getName() == null){
-					//chooseName(i, StringFunctions.make_rand_name());
-				}
-			}
-			doScriptProcess("onStartup");
-			for(int i = 1; i < this.players.length; i++){//tell each of their roles
-				this.sendToPlayerNum(i, getName(),
-						StringFunctions.HTMLColor("FFFF00", getPlayer(i).inGameName+", your role is ")+StringFunctions.HTMLColor("00FF00", getPlayerRole(i).getName())
-					);
-				//getCharacter((getPlayer(i).getEID())).send(CmdCompile.setPlayerNum(i));
-				//getCharacter((getPlayer(i).getEID())).send(CmdCompile.setTargetables(getPlayerRole(i)));
-				//getCharacter((getPlayer(i).getEID())).send(CmdCompile.matchStart());
-			}
-
-			//TODO Match Delay needed here to allow players to view role
-			if(getSetting("start_game_at")==0) beginDay();//Start day sequence
-			else if(getSetting("start_game_at")==1) beginDiscuss();//Start discuss sequence
-			else if(getSetting("start_game_at")==2) beginNight();//Start night sequence
 			break;
 		case Constants.PHASEMAIN_INPLAY:
 			switch(getPhaseDayType()){
@@ -1406,28 +1601,6 @@ public class MatchForum extends GameObject{
 					beginNight();//Start night sequence
 				}
 				break;
-			case Constants.PHASEDAYTYPE_TRIALPLEAD://from trialplead
-				beginTrialVote();//go trialvote
-				break;
-			/*case Constants.PHASEDAYTYPE_TRIALVOTE://from trialvote inno/guilty
-				this.send(CmdCompile.chatScreen("The trial is over and the votes have been counted."));
-				if(this.ballot[1] < this.ballot[2]){//if there are more guilty than inno votes
-					beginLynch();
-				}
-				else{//if inno
-					this.send(CmdCompile.chatScreen("The town has decided to pardon "+getPlayer(trialplayer).getName()+"."));
-					this.trialplayer = 0;//no one on trial anymore
-					if(getSetting("trial_pause_day")==1){
-						beginDay(this.timerremain);//if inno and paused time, go to 2(normal)
-					}
-					else if((this.timerremain - System.currentTimeMillis()) > 0){
-						beginDay((this.timerremain - Math.round((System.currentTimeMillis()/1000))) + 2);
-					}
-					else{
-						beginNight();//if inno no time pause, go to 8(night)
-					}
-				}
-				break;*/
 			case Constants.PHASEDAYTYPE_LYNCH://from Lynch
 				if(checkVictoryAndGameEnd()){beginGameEnd();}
 				else beginNight();//Start night sequence
@@ -1458,7 +1631,7 @@ public class MatchForum extends GameObject{
 				}
 				Game.Base.Console.debug("Checking wins ect");
 				if(checkVictoryAndGameEnd()){Game.Base.Console.debug("Night going gameEnd"); beginGameEnd();}
-				else {Game.Base.Console.debug("Night going discuss"); beginDiscuss();}//Start discuss sequence
+				else {Game.Base.Console.debug("Night going discuss"); beginDay();}//Start discuss sequence
 				break;
 			}
 			break;
@@ -1472,17 +1645,19 @@ public class MatchForum extends GameObject{
 		}
 	}
 	/** Assigns roles to each player, then randomizes their order. Returns true on success*/
-	public boolean assignRoles(){
+	private boolean assignRoles(){
 		boolean noError = true;
-		roles = new RoleForum[getNumChars()+1];
+		roles = new RoleForum[roleSetup.size()+1];
 		Random rand = new Random();//makes new random number
 		if(noError){
-			for (int i = 1; i <= getNumChars(); i++){
-				RolesOrig origRole = roleSetup.get(i-1);
+			int i = 1;
+			for(RolesOrig origRole : getRoleSetup()){
+			//for (int i = 1; i <= roleSetup.size(); i++){
+				//RolesOrig origRole = roleSetup.get(i-1);
 				if(origRole.eID > 0){//if a role id...grab the single id instead of category
 					roles[i] = Game.Base.MySql.grabRoleForum(origRole.eID);
 					roles[i].setMatch(this);
-					if(roles[i]==null){Game.Base.Console.warning("Could not retrieve a role the list based on manuel id, Start Cancelled");noError = false;break;}
+					if(roles[i]==null){sendSignup("Could not retrieve a role the list based on manuel id, Start Cancelled");noError = false;break;}
 					origRole.roleName = roles[i].getName();
 				}
 				else{//grab category
@@ -1503,19 +1678,30 @@ public class MatchForum extends GameObject{
 						break;
 					}
 				}
+				i++;
 			}
 		}
 		if(noError){
 			this.players = null;//emptys the list
 			//this.players = new Players[getNumChars()];//set as 0-chars for now
-			Players[] playersTemp = new Players[getNumChars()];//set as 0-chars for now
-			players = new Players[getNumChars()+1];//set the real players var
-			graveyard = new Players[getNumChars()+1];
+			List<Players> theSignups = getSignupList();
+			Players[] playersTemp = new Players[roleSetup.size()];//set as 0-chars for now
+			Players[] playersLeftOvers = new Players[getSignupList().size() - roleSetup.size()];//players to add to reserves//TODO need to actually add to reserves
+			players = new Players[roleSetup.size()+1];//set the real players var
+			graveyard = new Players[roleSetup.size()+1];
+			Collections.shuffle(theSignups);
 			int loop = 0;
-			for(Players play : signups.values()){
-				playersTemp[loop] = play;
-				//playersTemp[loop].eID = chara.getEID();
-				loop++;
+			int loop2 = 0;
+			for(Players play : theSignups){
+				if(loop < roleSetup.size()){
+					playersTemp[loop] = play;
+					//playersTemp[loop].eID = chara.getEID();
+					loop++;
+				}
+				else{
+					playersLeftOvers[loop2] = play;
+					loop2++;
+				}
 			}
 			Collections.shuffle(Arrays.asList(playersTemp));
 				//$this->players = array_offset($this->players);//increases all keys by +1
@@ -1555,24 +1741,6 @@ public class MatchForum extends GameObject{
 		return noError;
 	}
 	/**
-	 * Entering this phase constitutes the 'Start' of the game.<br>
-	 * Upon starting, players are choosen roles, then asked to make a name(If allowed in options)
-	 */
-	private void beginNaming(){
-		/*//Start naming mode
-		//	Notify of time til day
-		//	Set timer to advancePhase
-		this.setPhaseMain(Constants.PHASEMAIN_NAMING);
-		if(getSetting("choose_names")>0){//if names are allowed to be choosen
-			this.send(CmdCompile.nameSelectPrompt());
-			this.addAdvancePhaseTimer(getSetting("naming_length"));
-			this.send(CmdCompile.timerStart(getSetting("naming_length")));
-		}
-		else{//skip if not
-			this.advancePhase();
-		}*/
-	}
-	/**
 	* Start the beginning of a Day's Discussion mode.<br>
 	* <br>Allows players to talk, but not vote.<br>
 	* This mode will be skipped automatically if the options tell it to.
@@ -1602,6 +1770,7 @@ public class MatchForum extends GameObject{
 			//	Notify of time til normal mode
 			//	Set timer to advancePhase
 			//this.addAdvancePhaseTimer(getSetting("discuss_length"));
+			setTimer(Game.nextXHour(getSetting("discuss_length")));
 			//this.send(CmdCompile.timerStart(getSetting("discuss_length")));
 			this.sendMatch("(Day "+getPhaseDay()+" Discussion)You have "+getSetting("discuss_length")+" hours until discussions end");
 		}
@@ -1626,21 +1795,26 @@ public class MatchForum extends GameObject{
 		//	Notify of time til normal mode
 		//	Set timer to advancePhase
 		//clearVotes();
-		if(getPhaseMain()==Constants.PHASEMAIN_NAMING){//if coming from naming(game just starting)
+		if(getPhaseMain()==Constants.PHASEMAIN_STARTING){//if coming from naming(game just starting)
 			setPhaseMain(Constants.PHASEMAIN_INPLAY);
 			setPhaseDay(1);
 			setPhaseDayType(Constants.PHASEDAYTYPE_NORMAL);
+			this.postNewDay(false);
 		}
 		else{//if discuss/night ending
 			setPhaseDayType(Constants.PHASEDAYTYPE_NORMAL);
+			this.postNewDay(true);
 		}
-		int daytimer;
-		if(timeR != null){daytimer=timeR;}else{daytimer=getSetting("day_length");}
+		//int daytimer;
+		//if(timeR != null){daytimer=timeR;}else{daytimer=getSetting("day_length");}
 			//echo "in day ".floor($this->phase)." normal mode going to phase".$this->phase."\n";
 		//$this->timer = $game->addTimer($daytimer,"match",$matchid,"advancePhase");
+		setTimer(Game.nextXHour(getSetting("day_length")));
 		//this.addAdvancePhaseTimer(daytimer);
 		//this.send(CmdCompile.timerStart(daytimer));
-		this.sendMatch("(Day "+getPhaseDay()+")You have "+daytimer+" hours until the day end");
+		//this.sendMatch("(Day "+getPhaseDay()+")You have "+daytimer+" hours until the day end");
+		//TODO set timer for night
+		//this.postNewDay();
 	}
 	/**
 	 * Starts the Night sequence for all players.<br>
@@ -1650,62 +1824,50 @@ public class MatchForum extends GameObject{
 		//Start night sequence
 		//Do daily BeforNight scripts
 		doScriptProcess("onNightStart");
-		if(getPhaseMain()==Constants.PHASEMAIN_NAMING){//if coming from naming(game just started)
+		String message = "It is now Night "+getPhaseDay()+", you have "+getSetting("night_length")+" hours until Night ends.\n" +
+						"Posting in this thread is forbidden";
+		if(getPhaseMain()==Constants.PHASEMAIN_STARTING){//if coming from naming(game just started)
 			setPhaseMain(Constants.PHASEMAIN_INPLAY);
 			setPhaseDay(1);
 			setPhaseDayType(Constants.PHASEDAYTYPE_NIGHT);
 		}
+		else if(getPhaseDayType()==Constants.PHASEDAYTYPE_LYNCH){//if coming from lynch
+			//post in same night thread
+			boolean success = false;
+			try {
+				Game.Base.ForumAPI.post_New(getMatchThreadId(), message);
+				success = true;
+			}
+			catch (VBulletinAPIException e) {}
+			if(success){Game.Base.Console.debug("Added to night successful(added post)");}
+		}
 		else{
+			//new night thread
 			setPhaseDayType(Constants.PHASEDAYTYPE_NIGHT);
+
+			int[] threadMsg = new int[2];
+			boolean success = false;
+			try {
+				threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIMPLE_ONGOING, getName()+" Night "+getPhaseDay(), message);
+				success = true;
+			}
+			catch (VBulletinAPIException e) {}
+			if(success){
+				setMatchThreadId(threadMsg[0]);
+				setMatchPostId(threadMsg[1]);
+				Game.Base.Console.debug("New Night successful... thread ID is "+threadMsg[0]+" post id is "+threadMsg[1]);
+				//nextPost = true;
+			}
 		}
 		//		Notify of time til day
 		//	Set timer to advancePhase
 		//this.addAdvancePhaseTimer(getSetting("night_length"));
+		setTimer(Game.nextXHour(getSetting("night_length")));
 		//this.send(CmdCompile.timerStart(getSetting("night_length")));
 		//this.send(CmdCompile.chatScreen("(Night "+getPhaseDay()+")You have "+getSetting("night_length")+" secs til day"));
 	}
-	/**
-	 * Entered upon the majority of players voting a single player during day phase.<br>
-	 * The voted player is given a moment to defend themselves before moving to TrialVote.<br><br>
-	 * *Only defending player may speak.<br>
-	 * *Mode will be skipped to TrialVote if options allow.
-	 */
-	private void beginTrialDefense(int player){//TODO TrialDefense: Only trialplayer may speak
-		//Start defense mode
-		//	Notify of time trial vote
-		//	Set timer to advancePhase
-		/*this.trialplayer = player;
-		if(getSetting("trial_defense")>0){//if there can be a trial defense
-			setPhaseDayType(Constants.PHASEDAYTYPE_TRIALPLEAD);
-			this.addAdvancePhaseTimer(getSetting("trial_length"));
-			this.send(CmdCompile.timerStart(getSetting("trial_length")));
-			this.send(CmdCompile.chatScreen(getPlayer(player).getName()+", you are on trial for conspiracy against the town. What is your defense?"));
-			this.send(CmdCompile.chatScreen("(Trial Defense)You have "+getSetting("trial_length")+" seconds to plead your defense."));
-		}
-		else{//skipping defense
-			this.beginLynch();
-		}*/
-	}
-	/**
-	 * Mode prompts every player execpt the defended to vote inno or guilty, Majority wins<br><br>
-	 * *Tie = Inno
-	 */
-	private void beginTrialVote(){
-		//Start TrialVote mode
-		//	Notify of time til votes counted
-		//	Set timer to advancePhase
-		/*clearVotes();
-		setPhaseDayType(Constants.PHASEDAYTYPE_TRIALVOTE);
-
-			//echo "in trial vote phase ".$this->phase."\n";
-
-		//$this->timer2 = $game->addTimer($this->settings["trial_length"],"match",$matchid,"advancePhase");
-		this.addAdvancePhaseTimer(getSetting("trial_length"));
-		this.send(CmdCompile.timerStart(getSetting("trial_length")));
-		this.send(CmdCompile.chatScreen("(Trial Vote)You have "+getSetting("trial_length")+" secs to vote Guity/Innocent."));*/
-	}
 	/** Mode will announce players role and send them to graveyard */
-	private void beginLynch(){
+	private void beginLynch(int lynchedPlayer){
 		//clearVotes();
 		setPhaseDayType(Constants.PHASEDAYTYPE_LYNCH);
 		/*playerDeathReasonsClear(trialplayer);
@@ -1717,6 +1879,24 @@ public class MatchForum extends GameObject{
 		this.send(CmdCompile.timerStart(5));
 		this.send(CmdCompile.chatScreen("(Lynch)"+getPlayer(trialplayer).getName()+" has been lynched by the Town!"));
 		this.send(CmdCompile.chatScreen("(Lynch)"+getPlayer(trialplayer).getName()+"'s role was "+getPlayerRole(trialplayer).getName()));*/
+		playerDeathReasons(lynchedPlayer,"Lynched","lynched by an angry mob on Day "+getPhaseDay());
+		String death = killPlayer(lynchedPlayer);
+		String message = death;
+		int[] threadMsg = new int[2];
+		boolean success = false;
+		try {
+			threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIMPLE_ONGOING, getName()+" Night "+getPhaseDay(), message);
+			success = true;
+		}
+		catch (VBulletinAPIException e) {}
+		if(success){
+			setMatchThreadId(threadMsg[0]);
+			setMatchPostId(threadMsg[1]);
+			Game.Base.Console.debug("New Lynch successful... thread ID is "+threadMsg[0]+" post id is "+threadMsg[1]);
+			//nextPost = true;
+		}
+		advancePhase();
+
 	}
 	/** Mode displays the winning teams and players as well as their roles. Adds timer to kill match after certain time*/
 	private void beginGameEnd(){
@@ -1752,7 +1932,7 @@ public class MatchForum extends GameObject{
 			int loop = numWinners;
 			for(Players player:winners){
 				loop--;
-				message += StringFunctions.HTMLColor(player.getHexcolor(), player.getName());
+				message += StringFunctions.bbColor(player.getHexcolor(), player.getName());
 				if(loop != 0){if(numWinners > 2){message += ",";}}
 				if(loop == 1){message += " and";}
 				message += " ";
@@ -1761,7 +1941,7 @@ public class MatchForum extends GameObject{
 		}
 		else if(numWinners == 1){
 			for(Players player:winners){
-				message += StringFunctions.HTMLColor(player.getHexcolor(), player.getName())+" ";
+				message += StringFunctions.bbColor(player.getHexcolor(), player.getName())+" ";
 			}
 			message += "has ";
 		}
