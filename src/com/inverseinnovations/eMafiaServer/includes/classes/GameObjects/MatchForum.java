@@ -274,7 +274,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			}
 		}
 	}
-	public void postNewDay(boolean edit){//TODO announce when day ends
+	public void postNewDay(boolean edit){
 		//edit is if making a new thread or not
 		//role setup
 		String setup = "";
@@ -306,14 +306,20 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			dead = "[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=5]Graveyard :[/SIZE][/B][/COLOR]\n";
 			for(Players player : getDeadList()){
 				if (player != null){
-					players += player.getPlayerNumber()+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]\n";//TODO need to show death reason
+					String death = "";
+					if(!getRole(player.roleNumber).deathDesc.isEmpty()){death = " - "+getRole(player.roleNumber).deathDesc.get(0);}
+					players += player.getPlayerNumber()+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]"+death+"\n";
 				}
 			}
 			dead +="<BR>";
 		}
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.add(Calendar.HOUR, getSetting("day_length"));
 		String message =
 				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=6]"+getName()+" Day "+getPhaseDay()+"[/SIZE][/COLOR]\n" +
-				"[URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getSignupThreadId()+"]Setup Thread[/URL]\n" +//TODO make into link
+				"[URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getSignupThreadId()+"]Setup Thread[/URL]\n" +
 				"[COLOR=#DDA0DD][SIZE=5]Setup :[/SIZE][/COLOR]\n" +
 				"\n" +
 				setup + //SETUP HERE
@@ -323,7 +329,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 				"\n" +
 				dead + //GRAVEYARD HERE
 				"[l]"+requiredVotes()+"[/l]\n" +
-				"There are "+getSetting("day_length")+" hours until Day ends." +
+				"Day will end on "+StringFunctions.wolfaramAlphaLink(cal)+
 				"[/B][/CENTER][/COLOR]";
 
 		if(edit){//after night, use same thread
@@ -574,18 +580,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	        //it.remove(); // avoids a ConcurrentModificationException
 	    }
 	    return list;
-	}
-	/** Returns number of characters in room */
-	public int getNumChars(){
-		return this.characters.size();
-	}
-	/**Returns List of Characters currently in the match */
-	public List<Players> getCharacterList(){//bad TODO
-		List<Players> list = new ArrayList<Players>();
-		for(Players chara : this.characters.values()){
-			list.add(chara);
-		}
-		return list;
 	}
 	/**Gets the host id of the match, 0 if there is none*/
 	public int getHostId(){
@@ -1113,35 +1107,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			}catch (InterruptedException e) {e.printStackTrace();}
 		}
 	}
-	/**
-	 * Passes 'chat' through the chatController for inplay speaking
-	 * @param fromPlayerNum the speaking players number
-	 * @param message the player is saying
-	 */
-	/*public void chatter(int fromPlayerNum, String message){//TODO ChatChannels: expand greatly
-		if(getPhaseMain() == Constants.PHASEMAIN_INPLAY && fromPlayerNum != 0){//as long as in play
-			//cycle through each of his channels
-			for(int chanId : chatGroup.getPlayer(fromPlayerNum).channels.values()){
-				com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum.ChatGroup.ChatChannel channel = chatGroup.getChannel(chanId);
-				//if this channel can speak at this time....yes i know it looks complex...maybe need to find better way
-				//Game.Base.Console.debug("channel is "+channel.dayOrNight+" and is is now "+getPhaseDayType());
-				if((channel.dayOrNight == 0 && (getPhaseDayType() == Constants.PHASEDAYTYPE_DISCUSSION || getPhaseDayType() == Constants.PHASEDAYTYPE_NORMAL || getPhaseDayType() == Constants.PHASEDAYTYPE_TRIALVOTE || getPhaseDayType() == Constants.PHASEDAYTYPE_LYNCH || (getPhaseDayType() == Constants.PHASEDAYTYPE_TRIALPLEAD && fromPlayerNum == trialplayer))) ||
-					(channel.dayOrNight == 1 && getPhaseDayType() == Constants.PHASEDAYTYPE_NIGHT) ||
-					channel.dayOrNight == 2){
-					if(channel.players.containsKey(fromPlayerNum)){
-						if(channel.getPlayer(fromPlayerNum).talkRights == 1){//if this player is allowed to talk in this channel
-							//cycle through all players in this channel
-							for(com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum.ChatGroup.ChatChannel.PlayerRights player : channel.players.values()){
-								if(player.listenRights == 1){//if this player is allowed in listen in this channel
-									sendToPlayerNum(player.id, message, players[fromPlayerNum]);//send message to this player
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-	}*/
 
 //////////////////////////
 ///////////Other//////////
@@ -1253,7 +1218,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	 */
 	public void doScriptProcess(int playerNum, String event){
 		RoleForum role = getPlayerRole(playerNum);
-		for(Flag flag : role.getFlags().values()){//TODO Flags" test if work
+		for(Flag flag : role.getFlags().values()){
 			if(flag.isScriptedPre()){
 				new scriptProcess(event, flag.getScriptPre(event), role);
 			}
@@ -1261,7 +1226,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		if(StringUtils.isNotEmpty(role.getScript(event))){//if there is a event script
 				new scriptProcess(event, role.getScript(event), role);//does event script
 		}
-		for(Flag flag : role.getFlags().values()){//TODO Flags" test if work
+		for(Flag flag : role.getFlags().values()){
 			if(flag.isScriptedPost()){
 				new scriptProcess(event, flag.getScriptPost(event), role);
 			}
@@ -1329,9 +1294,10 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		this.players[playerNum] = null;
 		try {
 			Game.Base.ForumAPI.pm_SendNew(this.getPlayer(playerNum).getName(), "You are Dead", "Enough said, good game");
-			//TODO time delay?
+			try {
+				TimeUnit.SECONDS.sleep(Constants.DELAY_BETWEEN_PMS);
+			}catch (InterruptedException e) {e.printStackTrace();}
 		} catch (VBulletinAPIException e) {}
-		//test
 		return theReturn;
 	}
 	/** Sends player to graveyard */
@@ -1812,8 +1778,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		//this.addAdvancePhaseTimer(daytimer);
 		//this.send(CmdCompile.timerStart(daytimer));
 		//this.sendMatch("(Day "+getPhaseDay()+")You have "+daytimer+" hours until the day end");
-		//TODO set timer for night
-		//this.postNewDay();
 	}
 	/**
 	 * Starts the Night sequence for all players.<br>
@@ -1823,7 +1787,11 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		//Start night sequence
 		//Do daily BeforNight scripts
 		doScriptProcess("onNightStart");
-		String message = "It is now Night "+getPhaseDay()+", you have "+getSetting("night_length")+" hours until Night ends.\n" +
+		Calendar cal = Calendar.getInstance();
+		cal.set(Calendar.SECOND, 0);
+		cal.set(Calendar.MINUTE, 0);
+		cal.add(Calendar.HOUR, getSetting("night_length"));
+		String message = "It is now Night "+getPhaseDay()+", this night will end on "+StringFunctions.wolfaramAlphaLink(cal)+".\n" +
 						"Posting in this thread is forbidden";
 		if(getPhaseMain()==Constants.PHASEMAIN_STARTING){//if coming from naming(game just started)
 			setPhaseMain(Constants.PHASEMAIN_INPLAY);
@@ -1899,7 +1867,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	}
 	/** Mode displays the winning teams and players as well as their roles. Adds timer to kill match after certain time*/
 	private void beginGameEnd(){
-		//TODO Client: remove vote/target buttons
 		//Check victoryConditctions for all players
 		Game.Base.Console.debug("The Game has completed...");
 		setPhaseMain(Constants.PHASEMAIN_ENDGAME);

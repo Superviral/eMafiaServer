@@ -9,7 +9,9 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.UnsupportedEncodingException;
 import java.text.CharacterIterator;
+import java.text.SimpleDateFormat;
 import java.text.StringCharacterIterator;
+import java.util.Calendar;
 import java.util.Random;
 
 
@@ -421,6 +423,14 @@ public class StringFunctions {
 //////////////////
 ////HTML Edits////
 //////////////////
+	/** Creates a bbcode link to Wolfaram Alpha with the time specified
+	 * @param cal
+	 * @return
+	 */
+	public static String wolfaramAlphaLink(Calendar cal){
+		String time = new SimpleDateFormat("MMM d, h a z").format(cal.getTime());
+		return "[url=http://www.wolframalpha.com/input/?i="+time+"]"+time+"[/url]";
+	}
 	/**
 	 * Wraps a String with HTML format font color tag
 	 * @param hexcolor 6 digit Hex code of color

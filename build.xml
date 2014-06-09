@@ -18,11 +18,11 @@
     </path>
     <path id="eMafiaServer.classpath">
         <pathelement location="bin"/>
-        <pathelement location="src/libraries/mysql-connector-java-5.1.23-bin.jar"/>
-        <pathelement location="src/libraries/gson-2.2.4.jar"/>
-        <pathelement location="src/libraries/commons-io-2.4.jar"/>
-        <pathelement location="src/libraries/commons-lang3-3.1.jar"/>
-        <pathelement location="src/libraries/js.jar"/>
+        <pathelement location="lib/mysql-connector-java-5.1.23-bin.jar"/>
+        <pathelement location="lib/gson-2.2.4.jar"/>
+        <pathelement location="lib/commons-io-2.4.jar"/>
+        <pathelement location="lib/commons-lang3-3.1.jar"/>
+        <pathelement location="lib/js.jar"/>
         <path refid="VBulletinAPI.classpath"/>
     </path>
     <target name="init">
