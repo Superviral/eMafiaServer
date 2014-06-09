@@ -268,7 +268,6 @@ public final class Game {
 	 */
 	public boolean PMcheck(){
 		boolean theReturn = true;
-		Base.Console.debug("Performing hourly PM checks");
 		ArrayList<Message> PMlist = new ArrayList<Message>();
 		try {
 			PMlist = Base.ForumAPI.pm_ListPMs();

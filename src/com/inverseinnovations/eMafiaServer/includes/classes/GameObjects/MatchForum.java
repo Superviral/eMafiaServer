@@ -246,7 +246,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 				boolean threadMsg = false;
 				try {
 					threadMsg = Game.Base.ForumAPI.post_Edit(getSignupSignId(), message);
-				}catch (VBulletinAPIException e) {}
+				}catch (VBulletinAPIException e) {Game.Base.Console.debug("Edit Signup failed in catch......");}
 				if(threadMsg){
 					Game.Base.Console.debug("Edit Signup successful...");
 					signupChanges = false;
@@ -312,17 +312,18 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			dead +="<BR>";
 		}
 		String message =
-				"[COLOR=#AFEEEE][CENTER][COLOR=#DDA0DD][B][SIZE=6]"+getName()+" Day "+getPhaseDay()+"[/SIZE][/B][/COLOR]<BR>" +
+				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=6]"+getName()+" Day "+getPhaseDay()+"[/SIZE][/COLOR]\n" +
 				"[URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getSignupThreadId()+"]Setup Thread[/URL]\n" +//TODO make into link
 				"[COLOR=#DDA0DD][SIZE=5]Setup :[/SIZE][/COLOR]\n" +
 				"\n" +
 				setup + //SETUP HERE
 				"\n" +
-				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=5]Alive Players :[/SIZE][/COLOR]\n" +
+				"[COLOR=#DDA0DD][SIZE=5]Alive Players :[/SIZE][/COLOR]\n" +
 				players + //PLAYERS HERE
 				"\n" +
 				dead + //GRAVEYARD HERE
-				"[B][l]"+requiredVotes()+"[/l]" +
+				"[l]"+requiredVotes()+"[/l]\n" +
+				"There are "+getSetting("day_length")+" hours until Day ends." +
 				"[/B][/CENTER][/COLOR]";
 
 		if(edit){//after night, use same thread
@@ -1159,7 +1160,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			}
 			catch (VBulletinAPIException e) {}
 			if(success){
-				Game.Base.Console.debug("checking for lynch");
 				if(post.userid == Constants.GODFATHER_ID){
 					Pattern p = Pattern.compile("^(.*?) has been lynched! Stand by for the host's review and day-end post!", Pattern.DOTALL);
 				    Matcher m = p.matcher(post.message_bbcode);
@@ -1171,7 +1171,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 					    	String lynchedId=m2.group(1);
 					    	Game.Base.Console.debug(lynchedName+" was lynched! Userid is "+lynchedId);
 					    	if(StringFunctions.isInteger(lynchedId)){
-					    		//TODO do lynch stuff here
 					    		int id = Integer.parseInt(lynchedId);
 						    	beginLynch(getPlayerNum(id));
 					    	}

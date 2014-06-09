@@ -75,7 +75,7 @@ public class LobbyCmd {
 			else if(ephrase[0].equals("create")){
 				c.Game.Base.Console.debug("_forumsignup create hit..");
 				if(c.Game.getMatchSignup() == null){
-					MatchForum matchF = new MatchForum(c.Game, "Another Test Match");
+					MatchForum matchF = new MatchForum(c.Game, "Yup Another Test Match");
 					c.Game.setMatchSignup(matchF);
 					c.Game.getMatchSignup().setHost(3359);//apo
 						c.Game.getMatchSignup().addToRoleSetup(7);//gf
