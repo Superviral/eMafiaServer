@@ -96,6 +96,8 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	 */
 	public void postSetup(){
 		//role setup
+		sortRolesPossible();
+		removeUnusedActionCategories();
 		String setup = "";
 		for(RolesOrig role : getRoleSetup()){
 			if (role != null){
@@ -826,6 +828,31 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			}
 		}
 	}
+	/**
+	 * Sorts all roles possible my first Town, then Mafia, then neutrals
+	 */
+	public void sortRolesPossible(){
+		ArrayList<RoleForum> town = new ArrayList<RoleForum>();
+		ArrayList<RoleForum> mafia = new ArrayList<RoleForum>();
+		ArrayList<RoleForum> neutral = new ArrayList<RoleForum>();
+		ArrayList<RoleForum> newRolesPossible = new ArrayList<RoleForum>();
+		for(RoleForum role: rolesPossible){
+			if(role.getAffiliation().equals("TOWN")){
+				town.add(role);
+			}
+			else if(role.getAffiliation().equals("MAFIA")){
+				mafia.add(role);
+			}
+			else{
+				neutral.add(role);
+			}
+		}
+		newRolesPossible.addAll(town);
+		newRolesPossible.addAll(mafia);
+		newRolesPossible.addAll(neutral);
+		rolesPossible = newRolesPossible;
+
+	}
 	/** Adds a role to setup by database ID*/
 	public boolean addToRoleSetup(int id){
 		boolean success = false;
@@ -923,6 +950,24 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			if(catIndex < actionCat.size()-1){
 				Collections.swap(actionCat,catIndex,catIndex+1);
 			}
+		}
+	}
+	/**
+	 * Removes all Action Categories that are not in use
+	 */
+	public void removeUnusedActionCategories(){
+		for(String action:actionCat){
+			boolean removeAction = true;
+			for(RoleForum role:rolesPossible){
+				if(role.getActionCat().equals(action)){
+					removeAction = false;
+					break;
+				}
+			}
+			if(removeAction){
+				removeActionCategory(action);
+			}
+			removeAction = true;
 		}
 	}
 	/**Returns Role based on role number inputted
