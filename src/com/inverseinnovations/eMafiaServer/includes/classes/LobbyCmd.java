@@ -75,19 +75,22 @@ public class LobbyCmd {
 			else if(ephrase[0].equals("create")){
 				c.Game.Base.Console.debug("_forumsignup create hit..");
 				if(c.Game.getMatchSignup() == null){
-					MatchForum matchF = new MatchForum(c.Game, "Yup Another Test Match");
+					MatchForum matchF = new MatchForum(c.Game, "Another Test of persistence");
 					c.Game.setMatchSignup(matchF);
 					c.Game.getMatchSignup().setHost(3359);//apo
 						c.Game.getMatchSignup().addToRoleSetup(7);//gf
 						//c.Game.getMatchSignup().addToRoleSetup(4);//maf
 						//c.Game.getMatchSignup().addToRoleSetup(4);//maf
 						c.Game.getMatchSignup().addToRoleSetup(2);//sheriff
-						c.Game.getMatchSignup().addToRoleSetup("TOWN", "PROTECTIVE");
-						c.Game.getMatchSignup().addToRoleSetup(1);//cit
+						c.Game.getMatchSignup().addToRoleSetup("TOWN", "RANDOM");
+						c.Game.getMatchSignup().addToRoleSetup("TOWN", "RANDOM");
 						c.Game.getMatchSignup().addToRoleSetup(1);//cit
 						//c.Game.getMatchSignup().addToRoleSetup(1);//cit
 						//c.Game.getMatchSignup().addToRoleSetup(5);//electro
 					c.Game.getMatchSignup().postSetup();
+				}
+				else{
+					c.Game.Base.Console.debug("_forumsignup signup exists already...");
 				}
 			}
 		}
@@ -97,9 +100,11 @@ public class LobbyCmd {
 		if(ephrase.length > 1){
 			if(StringFunctions.isInteger(ephrase[0])){
 				if(c.Game.getMatchSignup() != null){
+					c.Game.Base.Console.debug("About to add to signup");
 					c.Game.getMatchSignup().addUserSignup(Integer.parseInt(ephrase[0]), ephrase[1]);
 					c.Game.Base.Console.debug("Adding "+ephrase[0]+" "+ephrase[1]+" to signups");
 				}
+				else{c.Game.Base.Console.debug("Signup is null");}
 			}
 		}
 	}

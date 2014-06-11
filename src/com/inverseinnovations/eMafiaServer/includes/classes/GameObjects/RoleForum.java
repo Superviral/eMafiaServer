@@ -12,9 +12,13 @@ import org.apache.commons.lang3.StringUtils;
 import com.inverseinnovations.eMafiaServer.includes.scriptProcess;
 import com.inverseinnovations.eMafiaServer.includes.classes.ERS.RoleForumERS;
 
-public class RoleForum extends GameObject{
-	public MatchForum Match;
+public class RoleForum extends GameObject implements java.io.Serializable{
+	private static final long serialVersionUID = 1L;
+	public transient MatchForum Match;
 	//Static Variables from Database
+	private int roleId;
+	private String roleName;
+	private int roleType;
 	private int version;
 	private String affiliation;
 	private String[] category;// = array();
@@ -33,7 +37,7 @@ public class RoleForum extends GameObject{
 	public int targetablesDay2;
 	//Dynamic Variables
 	private int playernum;
-	private RoleForumERS roleERS = null;
+	private transient RoleForumERS roleERS = null;
 	private boolean isAlive = true;
 	private boolean mayGameEnd = false;
 	private boolean victoryMet = false;
@@ -65,10 +69,22 @@ public class RoleForum extends GameObject{
  	 */
  	public RoleForum(final MatchForum match, int eid, String name, int type, String affiliation, String[] category){
 		super(eid, name, type);
+		this.roleId = eid;
+		this.roleName = name;
+		this.roleType = type;
 		this.Match = match;
 		this.affiliation = affiliation;
 		this.category = category;
 	}
+ 	/**Reconstructs the RoleForum role from a serialized stated to not run into issues
+ 	 * @param match
+ 	 */
+ 	public void reinit(MatchForum match){
+ 		this.Match = match;
+ 		this.id = roleId;
+		this.name = roleName;
+		this.type = roleType;
+ 	}
 	/**
 	 * Set the Match reference at a later point
 	 */

@@ -46,9 +46,15 @@ public final class Base {
 			// Setup a lobby for players to join //
 			new Lobby(Game, 1, "The Game Lobby");//This shall remain
 			//put 2 matchs up for debugging..remove later(will remain until release to public)
-			new Match(Game, "A First Match");
-			new Match(Game, "Another Match");
+			//new Match(Game, "A First Match");
+			//new Match(Game, "Another Match");
 			Server.listen();//should only be called once
+
+			//loads the past games
+			Game.setMatchOngoing(MySql.loadOngoingMatch());
+			if(Game.getMatchOngoing() != null){Game.getMatchOngoing().reinit(Game);Console.debug("Ongoing loaded "+Game.getMatchOngoing().getName());}
+			Game.setMatchSignup(MySql.loadSignupMatch());
+			if(Game.getMatchSignup() != null){Game.getMatchSignup().reinit(Game);Console.debug("Signup loaded "+Game.getMatchSignup().getName());}
 
 			//Game.scheduleTicker();
 			Console.config("eMafia Server "+Constants.VERSION+" is now up and running!");

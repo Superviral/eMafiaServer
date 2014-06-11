@@ -48,6 +48,7 @@ public final class Game {
 		this.start_time = System.nanoTime();
 		ContextFactory.initGlobal(new SandboxContextFactory());
 
+		
 		tickerSchedule();
 		//tickTask.doTask();//do without schedule
 	}
@@ -261,6 +262,8 @@ public final class Game {
 				}
 			}
 		}
+
+		Base.MySql.saveMatchs(matchOngoing, matchSignup);
 	}
 	/**
 	 * Checks the PMs, performs the commands issued via PM, and empties the inbox

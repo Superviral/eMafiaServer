@@ -12,10 +12,12 @@ public class GameObject {
 	 * <br>GO_TYPE_NPC		=> Mobile NPC
 	 * <br>TYPE_USERGROUP	=> Usergroup
 	 */
-	private int type;
-	private int id; // Entity ID //
-	private String name;
+	protected int type;
+	protected int id; // Entity ID //
+	protected String name;
 
+	public GameObject(){
+	}
 	public GameObject(int id, String name, int type){
 		this.id = id;
 		this.name = name;

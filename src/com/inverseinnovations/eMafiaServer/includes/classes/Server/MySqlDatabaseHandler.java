@@ -3,6 +3,8 @@ GNU GENERAL PUBLIC LICENSE V3
 Copyright (C) 2012  Matthew 'Apocist' Davis */
 package com.inverseinnovations.eMafiaServer.includes.classes.Server;
 
+import java.io.ByteArrayInputStream;
+import java.io.ObjectInputStream;
 import java.sql.*;
 import java.util.*;
 
@@ -780,6 +782,114 @@ public class MySqlDatabaseHandler extends Thread{
 		String front = "$"+rand.nextInt(9)+StringFunctions.rndChar();
 		String back = java.lang.Character.toString(StringFunctions.rndChar())+rand.nextInt(9)+java.lang.Character.toString(StringFunctions.rndChar());
 		return front+BCrypt.gensalt(12)+back;
+	}
+	/**
+	 * Saves or deletes a persistent match to the database. Use a Null object to remove
+	 * @param ongoing
+	 * @param signup
+	 * @return
+	 */
+	public boolean saveMatchs(MatchForum ongoing, MatchForum signup){
+		try {
+			st = con.prepareStatement("UPDATE persistence SET ongoing=?, signup=? WHERE id=1");
+			if(ongoing != null){st.setObject(1, ongoing);}else{st.setNull(1, java.sql.Types.BLOB);}
+			if(signup != null){st.setObject(2, signup);}else{st.setNull(2, java.sql.Types.BLOB);}
+			st.executeUpdate();
+			return true;
+		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase connection error saving matches");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return saveMatchs(ongoing, signup);
+			}
+			Base.Console.severe("MySqlDatabase saveMatchs connection error saving matches ERROR!");
+			Base.Console.printStackTrace(e);
+		}
+		catch(Exception e){
+			Base.Console.severe("MySqlDatabase saveMatchs other error");
+			Base.Console.printStackTrace(e);
+		}
+		return false;
+	}
+	public MatchForum loadOngoingMatch(){
+		Object match = null;
+		try {
+			st = con.prepareStatement("SELECT ongoing FROM persistence WHERE id = 1");
+			rs = st.executeQuery();
+			if(rs.next()){ // If match.
+
+				byte[] buf = rs.getBytes("ongoing");
+				ObjectInputStream objectIn = null;
+				if (buf != null)
+				objectIn = new ObjectInputStream(new ByteArrayInputStream(buf));
+				if(objectIn != null){
+					match = objectIn.readObject();
+				}
+
+				if(match != null){
+					if(match.getClass().getSimpleName().equals("MatchForum")){
+						return (MatchForum) match;
+					}
+					System.out.println("mysql ongoing match is a "+match.getClass().getSimpleName());
+				}
+			}
+
+		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase connection error saving matches");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return null;
+			}
+			Base.Console.severe("MySqlDatabase saveMatchs connection error saving matches ERROR!");
+			Base.Console.printStackTrace(e);
+		}
+		catch(Exception e){
+			Base.Console.severe("MySqlDatabase saveMatchs other error");
+			Base.Console.printStackTrace(e);
+		}
+		return null;
+	}
+	public MatchForum loadSignupMatch(){
+		Object match = null;
+		try {
+			st = con.prepareStatement("SELECT signup FROM persistence WHERE id = 1");
+			rs = st.executeQuery();
+			if(rs.next()){ // If match.
+
+
+				byte[] buf = rs.getBytes("signup");
+				ObjectInputStream objectIn = null;
+				if (buf != null)
+				objectIn = new ObjectInputStream(new ByteArrayInputStream(buf));
+				if(objectIn != null){
+					match = objectIn.readObject();
+				}
+
+				if(match != null){
+					if(match.getClass().getSimpleName().equals("MatchForum")){
+						return (MatchForum) match;
+					}
+					System.out.println("mysql signup match is a "+match.getClass().getSimpleName());
+				}
+			}
+
+		}
+		catch(com.mysql.jdbc.exceptions.jdbc4.CommunicationsException e){
+			Base.Console.severe("MySqlDatabase connection error saving matches");
+			if(getConnected()){
+				this.init(Base.Settings.MYSQL_URL, Base.Settings.MYSQL_USER, Base.Settings.MYSQL_PASS);
+				return null;
+			}
+			Base.Console.severe("MySqlDatabase saveMatchs connection error saving matches ERROR!");
+			Base.Console.printStackTrace(e);
+		}
+		catch(Exception e){
+			Base.Console.severe("MySqlDatabase saveMatchs other error");
+			Base.Console.printStackTrace(e);
+		}
+		return null;
 	}
 	/**Prints MySql version to the Console*/
 	public void getVersion(){//a test

@@ -30,14 +30,15 @@ import com.inverseinnovations.VBulletinAPI.VBulletinAPI.Post;
 
 public class MatchForum extends GameObject implements java.io.Serializable{
 	private static final long serialVersionUID = 1L;
-	public Game Game;
+	public transient Game Game;
+	protected String matchName = "";
 	private int signupThreadId;
 	private int signupPostId;
 	private int signupSignId;
 	private int matchThreadId;
 	private int matchPostId;
 	private boolean signupChanges = false;//if the post needs to be editted on the hour
-	private MatchForumERS matchERS = null;
+	private transient MatchForumERS matchERS = null;
 	private Map<Integer, Players> characters = Collections.synchronizedMap(new ConcurrentHashMap <Integer, Players>());//will make the signup
 	private Map<Integer, Players> signups = new LinkedHashMap<Integer, Players>();
 	private Map<Integer, Players> reserves = new LinkedHashMap<Integer, Players>();
@@ -63,6 +64,8 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	/** Creates a new Match with default settings for Forum games*/
 	public MatchForum(final Game game, String name) {
 		super(0, "E-FM "+name, Constants.TYPE_GAMEOB_MATCHFORUM);
+		matchName = "E-FM "+name;
+		System.out.println("!!!!!!!!!MatchForum created!!!!");
 		this.Game = game;
 		//Game.setMatchForum(this);
 
@@ -89,6 +92,25 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		int[] rolesToAdd = new int[]{1,2,3,4,5,6,7};//Cit,Sheriff,Doc,Mafiso,Escort,GF
 		for(int role: rolesToAdd){
 			addRolesPossible(role);
+		}
+	}
+	/**Reconstructs the MatchForum object from use when deserializing from a database. Reassigns object references for proper(error free) usage. Able to be called at any time
+	 * @param game
+	 */
+	public void reinit(final Game game){
+		this.id = 0;
+		this.name = matchName;
+		this.type = Constants.TYPE_GAMEOB_MATCHFORUM;
+		this.Game = game;
+		if(roles != null){
+			for(RoleForum role:roles){
+				role.setMatch(this);
+			}
+		}
+		if(teams != null){
+			for(TeamForum team:getTeams()){
+				team.setMatch(this);
+			}
 		}
 	}
 	/**
@@ -276,6 +298,9 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			}
 		}
 	}
+	/**Creates a post/thread for the next new Day
+	 * @param edit true posts a new day in the current thread, false creates a new thread for the day
+	 */
 	public void postNewDay(boolean edit){
 		//edit is if making a new thread or not
 		//role setup
@@ -956,12 +981,16 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	 * Removes all Action Categories that are not in use
 	 */
 	public void removeUnusedActionCategories(){
-		for(String action:actionCat){
+		ArrayList<String> actionList = new ArrayList<String>();
+		actionList = new ArrayList<String>(actionCat);
+		for(String action:actionList){
 			boolean removeAction = true;
-			for(RoleForum role:rolesPossible){
-				if(role.getActionCat().equals(action)){
-					removeAction = false;
-					break;
+			if(!action.isEmpty()){
+				for(RoleForum role:rolesPossible){
+					if(role.getActionCat().equals(action)){
+						removeAction = false;
+						break;
+					}
 				}
 			}
 			if(removeAction){
@@ -1448,20 +1477,17 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	 * If already STARTING and has enough players still, the match will begin
 	 * @return true when match actually starts*/
 	public boolean gameStart(){
-		Game.Base.Console.debug("doing gameStart");
 		boolean theReturn = false;
 		if(getPhaseMain() == Constants.PHASEMAIN_SIGNUP){
 			if(getSignupList().size() >= this.roleSetup.size()){
-				Game.Base.Console.debug("enough players...make STARTING");
 				setPhaseMain(Constants.PHASEMAIN_STARTING);
 				sendSignup("The match will begin in one hour.\n" +
 							"Be sure to signup by then for a chance to join.");
 			}
-			else{Game.Base.Console.debug("not enough players, leave alone");}
 		}
 		else if(getPhaseMain() == Constants.PHASEMAIN_STARTING){
 			if(getSignupList().size() >= this.roleSetup.size()){
-				Game.Base.Console.debug("In starting - still enough players...start game");
+				Game.Base.Console.debug("Starting Match "+getName());
 				advancePhase();//start match
 				sendSignup("The match started. Users may still -reserve a spot to fill in for any leaving players.\n" +
 							"\n" +
@@ -1482,7 +1508,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 				theReturn = true;
 			}
 			else{
-				Game.Base.Console.debug("STARTING - players must have left, dont start");
 				sendSignup("The match has been delayed due to a player withdrawing and will resume when enough players signup.");
 				setPhaseMain(Constants.PHASEMAIN_SIGNUP);
 			}
@@ -1970,7 +1995,8 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 ///////Dataholders////////
 //////////////////////////
 	/** Dataholder for Characters playing match */
-	public class Players{
+	public class Players implements java.io.Serializable{
+	private static final long serialVersionUID = 1L;
 	//public Match match;
 		public int fID;
 		public String inGameName;
@@ -2000,7 +2026,8 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	/** Dataholder for Roles inputted at start of match
 	 *  Allows for end game to display how started as what..(cults/disguiser)
 	 */
-	public class RolesOrig{
+	public class RolesOrig implements java.io.Serializable{
+		private static final long serialVersionUID = 1L;
 		public int eID;
 		public String affiliation;
 		public String[] category = new String[2];
@@ -2009,7 +2036,8 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	}
 	/** Dataholder containing chat channels in game<br>
 	 * Controls permission of each channel and who is speaking to who. */
-	public class ChatGroup{
+	public class ChatGroup implements java.io.Serializable{
+		private static final long serialVersionUID = 1L;
 		private Map<Integer, ChatChannel> channels = new LinkedHashMap<Integer, ChatChannel>();//<channelNum, ChatChannel settings>
 		private Map<Integer, PlayerChannels> players = new LinkedHashMap<Integer, PlayerChannels>();//<playerNum, PlayerChannel list>
 

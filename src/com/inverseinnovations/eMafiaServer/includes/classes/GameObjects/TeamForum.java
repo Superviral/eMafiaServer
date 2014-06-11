@@ -12,9 +12,11 @@ import org.apache.commons.lang3.StringUtils;
 import com.inverseinnovations.eMafiaServer.includes.Constants;
 import com.inverseinnovations.eMafiaServer.includes.classes.ERS.TeamForumERS;
 
-public class TeamForum extends GameObject{
-	private MatchForum match;
-	private TeamForumERS teamERS = null;;
+public class TeamForum extends GameObject implements java.io.Serializable{
+	private static final long serialVersionUID = 1L;
+	private transient MatchForum Match;
+	private transient TeamForumERS teamERS = null;;
+	private String teamName;
 	private boolean victory;
 	private boolean mayGameEnd;
 	private Map<String, String> ersScript = new LinkedHashMap<String, String>();
@@ -31,13 +33,29 @@ public class TeamForum extends GameObject{
 	 */
 	public TeamForum(final MatchForum match,String name){
 		super(0, name, Constants.TYPE_GAMEOB_TEAM);
-		if(this.match == null){this.match = match;}
+		if(this.Match == null){this.Match = match;}
+		this.teamName = name;
 	}
+	/**Reconstructs the TeamForum role from a serialized stated to not run into issues
+ 	 * @param match
+ 	 */
+ 	public void reinit(MatchForum match){
+ 		this.Match = match;
+ 		this.id = 0;
+		this.name = teamName;
+		this.type = Constants.TYPE_GAMEOB_TEAM;
+ 	}
 	/**
 	 * Returns the Match reference
 	 */
 	public MatchForum getMatch(){
-		return this.match;
+		return this.Match;
+	}
+	/**
+	 * Sets the Match reference
+	 */
+	public void setMatch(MatchForum match){
+		this.Match = match;
 	}
 	/**Returns the requested script for the specified event. Returns null if no existing event or script.
 	 * @param eventCall name of script
@@ -89,7 +107,7 @@ public class TeamForum extends GameObject{
 	public ArrayList<Integer> getAliveTeammates(){
 		ArrayList<Integer> list = new ArrayList<Integer>();
 		for(int num :getTeammates()){
-			if(match.getPlayerRole(num).isAlive()){
+			if(Match.getPlayerRole(num).isAlive()){
 				list.add(num);
 			}
 		}
@@ -118,8 +136,8 @@ public class TeamForum extends GameObject{
 	public boolean isRoleExist(int roleId){
 		boolean theReturn = false;
 		for(Integer i:getTeammates()){
-			if(match.getPlayerRole(i) != null){
-				if(match.getPlayerRole(i).getEID() == roleId){
+			if(Match.getPlayerRole(i) != null){
+				if(Match.getPlayerRole(i).getEID() == roleId){
 					theReturn = true;
 					break;
 				}
@@ -134,7 +152,7 @@ public class TeamForum extends GameObject{
 	public int numRoleAlive(int roleId){
 		int theReturn = 0;
 		for(Integer i:getTeammates()){
-			RoleForum role = match.getPlayerRole(i);
+			RoleForum role = Match.getPlayerRole(i);
 			if(role != null){
 				if(role.getEID() == roleId){
 					if(role.isAlive()){
@@ -152,7 +170,7 @@ public class TeamForum extends GameObject{
 	public boolean isRoleAlive(int roleId){
 		boolean theReturn = false;
 		for(Integer i:getTeammates()){
-			RoleForum role = match.getPlayerRole(i);
+			RoleForum role = Match.getPlayerRole(i);
 			if(role != null){
 				if(role.getEID() == roleId){
 					if(role.isAlive()){
