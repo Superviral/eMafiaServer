@@ -118,6 +118,9 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	 */
 	public void postSetup(){
 		//role setup
+		Game.Base.Console.debug("before remove usused possible roles");
+		removeUnusedPossibleRoles();
+		Game.Base.Console.debug("after remove usused possible roles");
 		sortRolesPossible();
 		removeUnusedActionCategories();
 		String setup = "";
@@ -878,6 +881,51 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		rolesPossible = newRolesPossible;
 
 	}
+	/**
+	 * Removes all roles from the possible role list that would never be used based on the current setup
+	 */
+	public void removeUnusedPossibleRoles(){
+		ArrayList<RoleForum> possibleList = new ArrayList<RoleForum>(getRolesPossible());
+		ArrayList<RolesOrig> setupList = new ArrayList<RolesOrig>(getRoleSetup());
+		for(RoleForum possibleRole:possibleList){
+			boolean removeRole = true;
+			for(RolesOrig setupRole:setupList){
+				if(setupRole.eID == possibleRole.getEID()){//if a role id...(a direct role not cat)
+					removeRole = false;
+					break;
+				}
+				if(setupRole.category[0].equals("RANDOM")){//if is a random role
+					if(setupRole.affiliation.equals("RANDOM")){
+						removeRole = false;
+						break;
+					}
+					else if(setupRole.affiliation.equals(possibleRole.getAffiliation())){
+						removeRole = false;
+						break;
+					}
+				}
+				if(setupRole.affiliation.equals("RANDOM")){
+					String[] possibleCats = possibleRole.getCategory();
+					if(possibleCats.length > 0){
+						if(setupRole.category[0].equals(possibleCats[0])){
+							removeRole = false;
+							break;
+						}
+						if(possibleCats.length > 1){
+							if(setupRole.category[0].equals(possibleCats[1])){
+								removeRole = false;
+								break;
+							}
+						}
+					}
+				}
+			}
+			if(removeRole){
+				removeRolesPossible(possibleRole.getEID());
+			}
+			removeRole = true;
+		}
+	}
 	/** Adds a role to setup by database ID*/
 	public boolean addToRoleSetup(int id){
 		boolean success = false;
@@ -981,7 +1029,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	 * Removes all Action Categories that are not in use
 	 */
 	public void removeUnusedActionCategories(){
-		ArrayList<String> actionList = new ArrayList<String>();
+		ArrayList<String> actionList;
 		actionList = new ArrayList<String>(actionCat);
 		for(String action:actionList){
 			boolean removeAction = true;
@@ -1040,6 +1088,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		}
 		return roleList;
 	}
+
 	/** Removes the votes and targets of all players for the next phase and well as night action targets*/
 	public void clearRoleTargets(){
 		//alive[playernum] = target
@@ -1760,6 +1809,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 				//getCharacter(getPlayer(i).getEID()).setPlayerNum(i);
 				getPlayer(i).playerNumber = i;
 				RoleForum tempRole = getPlayerRole(i);//getPlayerRole(i);//getRole(getPlayer(i).roleNumber);
+				getPlayer(i).startRoleName = tempRole.getName();
 				tempRole.setPlayerNum(i);
 				chatGroup.addPlayer(i);
 				chatGroup.addPlayerToChannel(i, "daychat", 1, 1);
@@ -1941,10 +1991,11 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		Game.Base.Console.debug("The Game has completed...");
 		setPhaseMain(Constants.PHASEMAIN_ENDGAME);
 		//check for winning teams and display
+		String message = "";
 		for(TeamForum team : teams.values()){
 			new scriptProcess("victoryCon", team.getScript("victoryCon"), team);
 			if(team.getVictory()){
-				sendMatch(team.getName()+" won!");
+				message += team.getName()+" won!\n";
 			}
 		}
 		//check for player wins
@@ -1963,7 +2014,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		}
 		//display winning players
 		int numWinners;
-		String message = "";
+		message = "";
 		if((numWinners = winners.size()) > 1){
 			int loop = numWinners;
 			for(Players player:winners){
@@ -1986,9 +2037,18 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		}
 		message += "won the game!";
 		sendMatch(message);
-		//TODO GameEnd: lists off everyone's roles
-		//this.addAdvancePhaseTimer(300);
-		//this.send(CmdCompile.timerStart(300));
+		message = "";
+		for(Players player : getPlayerList()){
+			message += StringFunctions.bbColor(player.getHexcolor(), player.getName());//player name
+			if(!getPlayerRole(player).getName().equals(player.startRoleName)){
+				message += "("+player.startRoleName+") -> ";
+			}
+			String color = "A9A9A9";
+			if(getPlayerRole(player).getAffiliation().equals("TOWN")){color = "00FF00";}else if(getPlayerRole(player).getAffiliation().equals("MAFIA")){color = "FF0000";}
+			message += "([COLOR="+color+"]"+getPlayerRole(player).getName()+"[/COLOR])";
+		}
+		sendMatch(message);
+		//TODO what to do after game is over?
 	}
 
 //////////////////////////
@@ -2002,6 +2062,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		public String inGameName;
 		public int playerNumber;
 		public int roleNumber;
+		public String startRoleName;//to compared at endgame if their role was changed
 		public String hexcolor = "FFFFFF";
 
 		public int getFID(){
