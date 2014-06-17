@@ -18,6 +18,7 @@ public class ForumCmdHandler {
 		System.out.println("processing forum cmd: "+command+" for "+username);
 		if(command.startsWith("-")||command.startsWith("/")){
 			command = command.toLowerCase().substring(1);
+
 			for(String fullword : ForumCmd.CMDLIST){
 				if(command.equals(fullword)){
 					System.out.println("invoking "+command);

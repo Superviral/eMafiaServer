@@ -19,6 +19,7 @@ import com.inverseinnovations.eMafiaServer.includes.Constants;
 import com.inverseinnovations.eMafiaServer.includes.SandboxContextFactory;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.Character;
+import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.MatchForum.Players;
 import com.inverseinnovations.eMafiaServer.includes.classes.Server.*;
 import com.inverseinnovations.VBulletinAPI.VBulletinAPI.Message;
 import com.inverseinnovations.VBulletinAPI.Exception.VBulletinAPIException;
@@ -48,7 +49,7 @@ public final class Game {
 		this.start_time = System.nanoTime();
 		ContextFactory.initGlobal(new SandboxContextFactory());
 
-		
+
 		tickerSchedule();
 		//tickTask.doTask();//do without schedule
 	}
@@ -293,6 +294,27 @@ public final class Game {
 							String[] cmdPhrase = msg.message.split(" ", 2);
 							String cmd = cmdPhrase[0];
 							String para = cmdPhrase[1];
+							//TODO check for command alias here - TESTING
+							if(getMatchOngoing() != null){
+								if(getMatchOngoing().getPhaseMain() == Constants.PHASEMAIN_INPLAY){
+									Players player;
+									if((player = getMatchOngoing().getPlayerByForumId(msg.userid)) != null){
+										if(getMatchOngoing().getPlayerRole(player).getAlias().containsKey(cmd.toLowerCase())){
+											String alias = getMatchOngoing().getPlayerRole(player).getAlias().get(cmd.toLowerCase());
+											System.out.println("command "+cmd+" turned to "+alias);
+											if(alias.contains(" ")){//if alters the para
+												cmdPhrase = alias.split(" ", 2);
+												cmd = cmdPhrase[0];
+												para = cmdPhrase[1];
+											}
+											else{//if only affects the cmd
+												cmd = alias;
+											}
+										}
+									}
+								}
+							}
+
 
 							System.out.println("PMList split the msg...about to process "+cmd+" from "+msg.username);
 							ForumCmdHandler.processCmd(this, msg.userid, msg.username, cmd, para);

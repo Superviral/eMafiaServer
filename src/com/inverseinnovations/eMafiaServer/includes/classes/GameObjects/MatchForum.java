@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -39,7 +38,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	private int matchPostId;
 	private boolean signupChanges = false;//if the post needs to be editted on the hour
 	private transient MatchForumERS matchERS = null;
-	private Map<Integer, Players> characters = Collections.synchronizedMap(new ConcurrentHashMap <Integer, Players>());//will make the signup
 	private Map<Integer, Players> signups = new LinkedHashMap<Integer, Players>();
 	private Map<Integer, Players> reserves = new LinkedHashMap<Integer, Players>();
 	private Map<String, Integer> settings = new LinkedHashMap<String, Integer>();
@@ -118,9 +116,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 	 */
 	public void postSetup(){
 		//role setup
-		Game.Base.Console.debug("before remove usused possible roles");
 		removeUnusedPossibleRoles();
-		Game.Base.Console.debug("after remove usused possible roles");
 		sortRolesPossible();
 		removeUnusedActionCategories();
 		String setup = "";
@@ -131,16 +127,16 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 					if(pureRole !=null){//[COLOR=#FF0000]
 						String color = "A9A9A9";
 						if(pureRole.getAffiliation().equals("TOWN")){color = "00FF00";}else if(pureRole.getAffiliation().equals("MAFIA")){color = "FF0000";}
-						//setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"]"+pureRole.getName()+"[/URL]<BR>";
-						//setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"][COLOR="+color+"]"+pureRole.getName()+"[/COLOR][/URL]<BR>";
+						//setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"]"+pureRole.getName()+"[/URL]\n";
+						//setup += "[URL=http://emafia.inverseinnovations.com/role?id="+pureRole.getEID()+"][COLOR="+color+"]"+pureRole.getName()+"[/COLOR][/URL]\n";
 						setup += "[COLOR="+color+"]"+pureRole.getName()+"[/COLOR]\n";
-						//setup += pureRole.getName()+"<BR>";
+						//setup += pureRole.getName()+"\n";
 					}
 				}
 				else{//is Category
 					String color = "A9A9A9";
 					if(role.affiliation.equals("TOWN")){color = "00FF00";}else if(role.affiliation.equals("MAFIA")){color = "FF0000";}
-					//setup += role.affiliation+" "+role.category[0]+"<BR>";
+					//setup += role.affiliation+" "+role.category[0]+"\n";
 					setup += "[COLOR="+color+"]"+role.affiliation+" "+role.category[0]+"[/COLOR]\n";
 				}
 			}
@@ -151,18 +147,19 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 			if (role != null){
 				String color = "A9A9A9";
 				if(role.getAffiliation().equals("TOWN")){color = "00FF00";}else if(role.getAffiliation().equals("MAFIA")){color = "FF0000";}
-				//possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"]"+role.getName()+"[/URL]<BR>";
+				//possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"]"+role.getName()+"[/URL]\n";
 				possible += "[URL=http://emafia.inverseinnovations.com/role?id="+role.getEID()+"][COLOR="+color+"]"+role.getName()+"[/COLOR][/URL]\n";
-				//possible += role.getName()+"<BR>";
+				//possible += role.getName()+"\n";
 			}
 		}
 		//order of op
 		String order = "";
 		for(String action : getActionCategories()){
-			order += action+"<BR>";
+			order += action+"\n";
 		}
 		String message =
-				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=6]"+getName()+"[/SIZE][/COLOR]\n" +
+				"[COLOR=#AFEEEE][B][CENTER]" +
+				"[COLOR=#DDA0DD][SIZE=6]"+getName()+"[/SIZE][/COLOR]\n" +
 				"\n" +
 				"[COLOR=#DDA0DD][SIZE=5]Setup :[/SIZE][/COLOR]\n" +
 				"\n" +
@@ -247,7 +244,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 				loop++;
 			}
 		}
-		if(loop == 1){signs = "No one has signed<BR>";}
+		if(loop == 1){signs = "No one has signed\n";}
 		String reserves = "";
 		loop = 1;
 		for(Players player : getReserveList()){
@@ -256,7 +253,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 				loop++;
 			}
 		}
-		if(loop == 1){reserves = "No one has reserved<BR>";}
+		if(loop == 1){reserves = "No one has reserved\n";}
 
 		String message =
 				"[COLOR=#AFEEEE][B][CENTER][COLOR=#DDA0DD][SIZE=5]Sign Up List :[/SIZE][/COLOR]\n" +
@@ -341,7 +338,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 					players += player.getPlayerNumber()+".) [URL=http://www.sc2mafia.com/forum/member.php?u="+player.getFID()+"]"+player.getName()+"[/URL]"+death+"\n";
 				}
 			}
-			dead +="<BR>";
+			dead +="\n";
 		}
 		Calendar cal = Calendar.getInstance();
 		cal.set(Calendar.SECOND, 0);
@@ -558,18 +555,6 @@ public class MatchForum extends GameObject implements java.io.Serializable{
  		removeUserReserve(chara.getFID());
 	}
 	/**
-	 * Returns character in match based on EID
-	 */
-	public Players getCharacter(int eid){
-		return this.characters.get(eid);
-	}
-	/**
-	 * Returns Map of all Characters in the match
-	 */
-	public Map<Integer, Players> getCharacters(){
-		return this.characters;
-	}
-	/**
 	 * Returns Map of all Players signed up for the match
 	 */
 	public Map<Integer, Players> getSignups(){
@@ -720,6 +705,17 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		}
 		return numAlive;
 	}
+	public Players getPlayerByForumId(int forumId){
+		for(Players player:getPlayerList()){
+			if(player != null){
+				if(player.fID == forumId){
+					return player;
+				}
+			}
+		}
+		return null;
+	}
+
 //////////////////////////
 ///////////Roles//////////
 //////////////////////////
@@ -1549,6 +1545,10 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 							getPlayer(i).inGameName+", you were selected as a participant in "+getName()+".\n" +
 							"\n"+
 							"Your role is "+StringFunctions.bbColor("00FF00", getPlayerRole(i).getName())+"\n" +
+							getPlayerRole(i).desc+"\n" +
+							"\n" +
+							"Win Condition:\n" +
+							getPlayerRole(i).winCondDesc+"\n"+
 							"\n" +
 							"Be sure post your greetings on the [URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getMatchThreadId()+"]Match Thread[/URL]"
 

@@ -256,6 +256,24 @@ public class MySqlDatabaseHandler extends Thread{
 					}
 
 					role.setActionCat(rs.getString("actionCat"));
+					role.desc = rs.getString("desc");
+					role.winCondDesc = rs.getString("winCondDesc");
+					if(StringUtils.isNotEmpty(rs.getString("alias"))){
+						Map<String, String> aliasMap = new LinkedHashMap<String, String>();
+						String alias = rs.getString("alias");
+						if(alias.contains("\n")){//if mulitple alias
+							String aliass[] = alias.split("\n");
+							for(String single:aliass){
+								String[] split = single.split("|");
+								aliasMap.put(split[0], split[1]);
+							}
+						}
+						else{
+							String[] split = alias.split("|");
+							aliasMap.put(split[0], split[1]);
+						}
+						role.setAlias(aliasMap);
+					}
 					if(StringUtils.isNotEmpty(rs.getString("victoryCon"))){role.setScript("victoryCon", rs.getString("victoryCon"));}
 					if(StringUtils.isNotEmpty(rs.getString("mayGameEndCon"))){role.setScript("mayGameEndCon", rs.getString("mayGameEndCon"));}
 					if(StringUtils.isNotEmpty(rs.getString("onStartup"))){role.setScript("onStartup", rs.getString("onStartup"));}

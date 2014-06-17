@@ -23,6 +23,8 @@ public class RoleForum extends GameObject implements java.io.Serializable{
 	private String affiliation;
 	private String[] category;// = array();
 	private String actionCat;
+	public String desc;
+	public String winCondDesc;
 	//private int numPossibleNightTargets;//targets 0-2 for nightaction(how many buttons should appear if any)
 	//private int numPossibleDayTargets;//targets 0-2 for dayaction(how many buttons should appear if any)
 	/** Who you are able to target with button 1
@@ -53,6 +55,7 @@ public class RoleForum extends GameObject implements java.io.Serializable{
 	private boolean teamWin = false;
 	private boolean teamVisible = false;
 	private boolean chatAtNight = false;
+	private Map<String, String> alias = new LinkedHashMap<String, String>();//command alias to replace
 	private Map<String, Integer> customVarInt = new LinkedHashMap<String, Integer>();
 	private Map<String, String> customVarString = new LinkedHashMap<String, String>();
 	private Map<String, Boolean> customVarBoolean = new LinkedHashMap<String, Boolean>();
@@ -380,6 +383,18 @@ public class RoleForum extends GameObject implements java.io.Serializable{
 	/**Sets target 1 and 2 to 0 (none)*/
 	public void clearTargets(){
 		setTarget1(0);setTarget2(0);
+	}
+	/**Returns a Map of command alias to replace given commands
+	 * @return
+	 */
+	public Map<String, String> getAlias(){
+		return alias;
+	}
+	/**Sets the define map of command alias
+	 * @param alias
+	 */
+	public void setAlias(Map<String, String> alias){
+		this.alias = alias;
 	}
 	/**
 	 * Saves a Boolean in this Role for later retrieval
