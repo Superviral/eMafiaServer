@@ -138,7 +138,7 @@ public class RoleForumERS{
 		role.setVictory(win);
 	}
 	public void text(String msg){
-		role.Match.sendToPlayerNum(getPlayerNum(), "blah", msg);//TODO fix the title..
+		role.Match.sendToPlayerNum(getPlayerNum(), role.Match.getName(), msg);
 	}
 	public void visit(RoleERS player){
 		RoleForum theRole = role.Match.getPlayerRoleWithSwitch(player.getPlayerNum());

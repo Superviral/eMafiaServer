@@ -55,6 +55,7 @@ public class RoleForum extends GameObject implements java.io.Serializable{
 	private boolean teamWin = false;
 	private boolean teamVisible = false;
 	private boolean chatAtNight = false;
+	private String lastwill; //TODO enable lastwills
 	private Map<String, String> alias = new LinkedHashMap<String, String>();//command alias to replace
 	private Map<String, Integer> customVarInt = new LinkedHashMap<String, Integer>();
 	private Map<String, String> customVarString = new LinkedHashMap<String, String>();
@@ -452,6 +453,18 @@ public class RoleForum extends GameObject implements java.io.Serializable{
 			theReturn = customVarString.get(var);
 		}
 		return theReturn;
+	}
+	/**Returns the last will saved by the user
+	 * @return
+	 */
+	public String getLastwill(){
+		return lastwill;
+	}
+	/**Saves the last will of the user
+	 * @param will
+	 */
+	public void setLastwill(String will){
+		this.lastwill = will;
 	}
 	/**
 	 * Sends a chat screen message to the client of this Role's player/character

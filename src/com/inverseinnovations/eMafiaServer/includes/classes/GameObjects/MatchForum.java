@@ -78,7 +78,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		//this.settings.put("naming_length", 10);//# in secs to choose a name
 
 		//unimplemented settings
-		this.settings.put("last_will", 0);//0=no/1=show last will
+		this.settings.put("last_will", 1);//0=no/1=show last will
 
 		//add action categorys for default
 		String[] actionsToAdd = new String[]{"Jail","Vest","Witch","Busdrive","Roleblock","Frame","Douse","Heal","Kill","Clean","Invest","Disguise","Recruit"};
@@ -175,7 +175,7 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 		int[] postMsg = new int[2];
 		boolean success = false;
 		try {
-			threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIMPLE_SIGNUPS, getName()+" Signups", message);
+			threadMsg = Game.Base.ForumAPI.thread_New(Constants.FORUM_SIMPLE_SIGNUPS, getName()+" (Signups)", message);
 			success = true;
 		}
 		catch (VBulletinAPIException e) {}
@@ -198,13 +198,14 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 					"[SIZE=5][COLOR=#DDA0DD]Possible Roles :[/COLOR][/SIZE][SPOILER=]" +
 					possible + //POSSIBLE ROLES HERE
 					"[/SPOILER]\n" +
-					"[COLOR=#DDA0DD][SIZE=5]Rules :[/SIZE][/COLOR]\n" +
-					"\n" +
+					"[COLOR=#DDA0DD][SIZE=5]Rules and Mechanics:[/SIZE][/COLOR]\n" +
+					"Days last "+getSetting("day_length")+" hours\n" +
+					"Nights last "+getSetting("night_length")+" hours\n" +
+					((this.getSetting("last_will") == 1) ? "Last Wills are enabled.\n" : "") +
 					"Vote using [Vote] tags.\n" +
 					"\n" +
 					"You can post pictures, though follow the forum picture rule.\n" +
 					"Videos are only allowed when not in autoplay.\n" +
-					"\n" +
 					"Show activity with a minimum of 3 constructive or non-forced posts.\n" +
 					"Lurking is discouraged. If you are forced inactive, please -withdraw from the game so another may take your place.\n" +
 					"\n" +
@@ -1402,6 +1403,13 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 				name+"'s role was "+getPlayerRole(playerNum).getName());*/
 		String theReturn = name+" was "+deathDesc+"\n"+
 				name+"'s role was "+getPlayerRole(playerNum).getName();
+		if(getSetting("last_will") == 1){
+			if(getPlayerRole(playerNum).getLastwill() != null){
+				theReturn += "\n\n"+name+" seemed to have left a last will incase of their demise..\n[QUOTE]" +
+						getPlayerRole(playerNum).getLastwill() +
+						"[/QUOTE]";
+			}
+		}
 		getPlayerRole(playerNum).setIsAlive(false);
 		doScriptProcess(playerNum,"onDeath");
 		int nextSlot = 0;
@@ -1539,8 +1547,15 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 							"Please use to link below to follow the game:\n" +
 							"[URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getMatchThreadId()+"]Match Thread[/URL]");
 				//tell each of their role cards
-				//TODO send commands and details of the role card
 				for(int i = 1; i < this.players.length; i++){//tell each of their roles
+					String teammates = "";
+					if(getPlayerRole(i).getTeamVisible()){
+						if(getPlayerRole(i).getTeam() != null){
+							for(int playerNum:getPlayerRole(i).getTeam().getTeammates()){
+								teammates += "\n"+getPlayer(playerNum).getName()+" - "+getPlayerRole(playerNum).getName();
+							}
+						}
+					}
 					this.sendToPlayerNum(i, getName(),
 							getPlayer(i).inGameName+", you were selected as a participant in "+getName()+".\n" +
 							"\n"+
@@ -1550,9 +1565,10 @@ public class MatchForum extends GameObject implements java.io.Serializable{
 							"Win Condition:\n" +
 							getPlayerRole(i).winCondDesc+"\n"+
 							"\n" +
-							"Be sure post your greetings on the [URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getMatchThreadId()+"]Match Thread[/URL]"
+							"Be sure post your greetings on the [URL=http://www.sc2mafia.com/forum/showthread.php?threadid="+getMatchThreadId()+"]Match Thread[/URL]\n" +
+							teammates
+						);
 
-						);//TODO teammates can see other teammates
 				}
 				theReturn = true;
 			}

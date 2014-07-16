@@ -34,7 +34,7 @@ public class LobbyCmd {
 		//admin commands
 		//"_show_commands","_shutdown","timer_add","_setupbots","_makenpc","_force"
 		//experimental commands
-		"test","var_dump","_sendpm","_newthread","_closethread", "_deletethread", "_hourlychecks","_forumsignup","_threadview","_addtosignup"
+		"test","var_dump","_sendpm","_newthread","_closethread", "_deletethread", "_hourlychecks","_forumsignup","_threadview","_addtosignup","_renamesignup"
 	};
 	public static void charaupdate(Character c, String phrase, byte[] data) {
 		String[] ephrase = phrase.split(" ");
@@ -79,12 +79,12 @@ public class LobbyCmd {
 					c.Game.setMatchSignup(matchF);
 					c.Game.getMatchSignup().setHost(3359);//apo
 						c.Game.getMatchSignup().addToRoleSetup(7);//gf
-						//c.Game.getMatchSignup().addToRoleSetup(4);//maf
-						//c.Game.getMatchSignup().addToRoleSetup(4);//maf
+						c.Game.getMatchSignup().addToRoleSetup(4);//maf
 						c.Game.getMatchSignup().addToRoleSetup(2);//sheriff
-						c.Game.getMatchSignup().addToRoleSetup("TOWN", "RANDOM");
-						c.Game.getMatchSignup().addToRoleSetup("TOWN", "RANDOM");
 						c.Game.getMatchSignup().addToRoleSetup(1);//cit
+						c.Game.getMatchSignup().addToRoleSetup("TOWN", "RANDOM");
+						c.Game.getMatchSignup().addToRoleSetup("TOWN", "RANDOM");
+						c.Game.getMatchSignup().addToRoleSetup("TOWN", "RANDOM");
 						//c.Game.getMatchSignup().addToRoleSetup(1);//cit
 						//c.Game.getMatchSignup().addToRoleSetup(5);//electro
 					c.Game.getMatchSignup().postSetup();
@@ -94,6 +94,10 @@ public class LobbyCmd {
 				}
 			}
 		}
+	}
+	public static void _renamesignup(Character c, String phrase, byte[] data) {
+		c.Game.getMatchSignup().setName(phrase);
+		c.Game.Base.Console.debug("Renamed the signup thread to "+phrase);
 	}
 	public static void _addtosignup(Character c, String phrase, byte[] data) {
 		String[] ephrase = phrase.split(" ", 2);
