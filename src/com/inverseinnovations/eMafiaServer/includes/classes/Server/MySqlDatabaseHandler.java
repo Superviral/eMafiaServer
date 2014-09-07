@@ -16,6 +16,7 @@ import com.inverseinnovations.eMafiaServer.includes.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.*;
 import com.inverseinnovations.eMafiaServer.includes.classes.GameObjects.*;
 
+import com.inverseinnovations.VBulletinAPI.VBulletinAPI.Member;
 import com.inverseinnovations.VBulletinAPI.Exception.*;
 import com.inverseinnovations.sharedObjects.RoleData;
 
@@ -762,14 +763,17 @@ public class MySqlDatabaseHandler extends Thread{
 			st.setString(1, username);
 			rs = st.executeQuery();
 			if(rs.next()){ // If match.
-				HashMap<String,String> forumData =Base.ForumAPI.forum_ViewMember(username);
-				if(forumData.containsKey("username")){
-					if(forumData.get("username").length() < 2){forumData.put("username", username);}
-					st = con.prepareStatement("UPDATE user_account SET forumid=?, forumjoindate=?, avatarurl=?, username=? WHERE username=?");
-					st.setInt(1, Integer.parseInt(forumData.get("forumid")));st.setLong(2, Long.parseLong(forumData.get("forumjoindate")));st.setString(3, forumData.get("avatarurl"));st.setString(4, forumData.get("username"));st.setString(5, username);
-					st.executeUpdate();
-					return true;
+				try{
+					Member forumData =Base.ForumAPI.forum_ViewMember(username);
+					if(forumData.username != null){
+						if(forumData.username.length() < 2){forumData.username = username;}
+						st = con.prepareStatement("UPDATE user_account SET forumid=?, forumjoindate=?, avatarurl=?, username=? WHERE username=?");
+						st.setInt(1, Integer.parseInt(forumData.userid));st.setLong(2, Long.parseLong(forumData.joindate));st.setString(3, forumData.avatarurl);st.setString(4, forumData.username);st.setString(5, username);
+						st.executeUpdate();
+						return true;
+					}
 				}
+				catch(VBulletinAPIException e){}//will return in a moment
 			}
 			return false;
 		}
